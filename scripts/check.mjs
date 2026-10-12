@@ -6,13 +6,15 @@
  *   node scripts/check.mjs [lumovi] [--base <ref>]
  *
  * Before it: each folder is a plugin's, read as Lumovi reads one it comes with, and named as its
- * plugin is; with --base (a pull request's base), a plugin whose file or README changed (what a
- * bundle carries of it, and the index pins) has a newer version.
+ * plugin is; with --base (a pull request's base), a plugin whose file, README or code changed
+ * (what a bundle carries of it, and the index pins) has a newer version, and what each plugin
+ * asks for, before and now, is written into the run's summary (changes.mjs).
  * After it: each file in tests/refused is refused by the same checker, with its reason.
  */
 import { execFileSync, spawnSync } from 'node:child_process'
-import { readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { allowlistChanges, asksChanges, changesSummary } from './changes.mjs'
 import { checkoutAt, LOCK, lumoviReader } from './lumovi.mjs'
 import { BUNDLED, readPlugins, refuse } from './plugins.mjs'
 
@@ -62,10 +64,33 @@ if (base) {
       return undefined
     }
   }
+  // What changed in what each plugin asks for: into the run's summary, for whoever reviews it.
+  const asked = (plugin) => plugin && { plugin, asks: lumovi.asks(plugin) }
+  const parsedAt = (name) => {
+    const before = at(`plugins/${name}/plugin.yaml`)
+    return before && lumovi.parse(before.toString('utf8'), `${name}.yaml`).plugin
+  }
+  const lines = read.flatMap(({ name, plugin }) => asksChanges(name, asked(parsedAt(name)), asked(plugin)))
+  const listedAt = execFileSync('git', ['ls-tree', '--name-only', `${base}:plugins`], { encoding: 'utf8' })
+  for (const name of listedAt.split('\n').filter(Boolean)) {
+    if (!read.some((plugin) => plugin.name === name)) lines.push(...asksChanges(name, asked(parsedAt(name))))
+  }
+  const allowed = at('allowlist.json')
+  lines.push(
+    ...allowlistChanges(allowed && JSON.parse(allowed.toString('utf8')), JSON.parse(readFileSync('allowlist.json', 'utf8'))),
+  )
+  const summary = changesSummary(base, lines)
+  console.log(summary)
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary)
+
   for (const { name, files, plugin } of read) {
     const before = at(`plugins/${name}/plugin.yaml`)
     if (!before) continue // A new plugin.
     const changed = BUNDLED.filter((file) => !at(`plugins/${name}/${file}`)?.equals(files[file]))
+    // Its code too, which the bundle carries: its own source, and the runtime it's built with.
+    const source = existsSync(`src/${name}/index.ts`) ? [`src/${name}`, 'src/runtime'] : []
+    const diff = source.length > 0 && execFileSync('git', ['diff', '--name-only', base, '--', ...source], { encoding: 'utf8' })
+    if (diff) changed.push('code')
     if (changed.length === 0) continue
     const was = lumovi.parse(before.toString('utf8'), `${name}.yaml`).plugin?.version
     if (was && !older(was, plugin.version)) {

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { FILES, readPlugins } from './plugins.mjs'
-import { lockProblems, releaseProblems, workflowProblems } from './rules.mjs'
+import { lockProblems, releaseProblems, srcProblems, workflowProblems } from './rules.mjs'
 
 /** A folder of plugins: each a name, and its files' contents (a file of the name it's given). */
 function folder(plugins) {
@@ -191,4 +191,34 @@ test('the checks run with Lumovi’s own checker, at one commit named whole', ()
     'lumovi.lock.json: commit should be a commit’s whole id, 40 hex digits',
     "lumovi.lock.json: ref isn’t something it has",
   ])
+})
+
+test('src/ keeps the code as it’s written: TypeScript and a plugin’s sample, nothing built', () => {
+  const ts = (path, text = 'export const a = 1\n') => ({ path, text })
+  assert.deepEqual(
+    srcProblems([
+      ts('src/runtime/index.ts'),
+      ts('src/runtime/index.test.ts'),
+      ts('src/karpenter/cards/pools.ts'),
+      ts('src/karpenter/sample.json', '{}'),
+      ts('src/karpenter/sample.page.json', '[]'),
+    ]),
+    [],
+  )
+  assert.deepEqual(
+    srcProblems([
+      ts('src/karpenter/index.js'),
+      ts('src/karpenter/plugin.min.js'),
+      ts('src/karpenter/data.json', '{}'),
+      ts('src/index.ts'),
+      ts('src/karpenter/index.ts', `const a = 1\n${'x'.repeat(201)}\n`),
+    ]),
+    [
+      'src/karpenter/index.js: src/ keeps TypeScript and a plugin’s sample, and nothing built: what a release carries is built by its workflow',
+      'src/karpenter/plugin.min.js: src/ keeps TypeScript and a plugin’s sample, and nothing built: what a release carries is built by its workflow',
+      'src/karpenter/data.json: src/ keeps TypeScript and a plugin’s sample, and nothing built: what a release carries is built by its workflow',
+      'src/index.ts: src/ keeps TypeScript and a plugin’s sample, and nothing built: what a release carries is built by its workflow',
+      'src/karpenter/index.ts:2: is longer than 200 characters: source here is written to be read, and never minified',
+    ],
+  )
 })

@@ -1,0 +1,12 @@
+apiVersion: lumovi.dev/v1beta1
+kind: Plugin
+metadata: { name: tiny }
+spec:
+  version: 1.0.0
+  needs: { lumovi: 1.0.0 }
+  groups: [tiny.example.com]
+  label: Tiny
+  kinds: [{ group: tiny.example.com, kind: Toy }]
+  pages: [{ id: overview, title: Overview }]
+  reads:
+    - { group: '', kind: Pod, fields: [metadata.name, metadata.namespace, spec.nodeName] }

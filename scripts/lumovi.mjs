@@ -23,22 +23,17 @@ export function checkoutAt(path) {
   return checkout
 }
 
+/** The checkout's own esbuild: the one its lock file names, and the only one these scripts use. */
+export const esbuildOf = (checkout) => createRequire(join(checkout, 'package.json'))('esbuild')
+
 /**
- * Lumovi's own parser and what it reads a plugin to ask for, from the checkout: built to one file
- * with the checkout's esbuild, outside it, and loaded.
+ * Some of Lumovi's own code, from the checkout (`lines`: what to export, from where in it), built
+ * to one file with the checkout's esbuild, outside it, and loaded: the module, and its `file`
+ * (for a worker to load it too).
  */
-export function lumoviReader(checkout) {
-  const require = createRequire(join(checkout, 'package.json'))
-  const esbuild = require('esbuild')
-  const built = esbuild.buildSync({
-    stdin: {
-      contents: [
-        "export { parsePlugin } from './src/shared/plugins.ts'",
-        "export { asks } from './src/shared/plugin-asks.ts'",
-      ].join('\n'),
-      resolveDir: checkout,
-      loader: 'ts',
-    },
+function lumoviCode(checkout, lines) {
+  const built = esbuildOf(checkout).buildSync({
+    stdin: { contents: lines.join('\n'), resolveDir: checkout, loader: 'ts' },
     bundle: true,
     platform: 'node',
     // (CommonJS: the parser's YAML package is, and an ES module can't require its parts.)
@@ -46,9 +41,34 @@ export function lumoviReader(checkout) {
     write: false,
     logLevel: 'error',
   })
-  const file = join(mkdtempSync(join(tmpdir(), 'lumovi-reader-')), 'lumovi.cjs')
+  const file = join(mkdtempSync(join(tmpdir(), 'lumovi-code-')), 'lumovi.cjs')
   writeFileSync(file, built.outputFiles[0].text)
-  const lumovi = createRequire(import.meta.url)(file)
+  return { ...createRequire(import.meta.url)(file), file }
+}
+
+/**
+ * Lumovi's own door, from the checkout: the page a plugin's code describes (`DoorPage`) and the
+ * parts Lumovi has for it, how a part is declared, what an ask to read is, how a page's asks are
+ * counted and what a read hands over, and the message a press sends. What a plugin's code is held
+ * to here is what Lumovi holds it to.
+ */
+export function lumoviDoor(checkout) {
+  return lumoviCode(checkout, [
+    "export { DoorPage, DOOR_LIMITS, ROOT } from './src/shared/plugin-door.ts'",
+    "export { DECLARED } from './src/shared/kit/parts.ts'",
+    "export * as declare from './src/shared/kit/declare.ts'",
+    "export { granted, handedWhole, kindAsked, PageReads, picked, READ_LIMITS, READ_REFUSED, readAsk, resolvedAs } from './src/shared/plugin-reads.ts'",
+    "export { callOf, Tokens } from './src/shared/plugin-presses.ts'",
+    "export { ownKinds } from './src/shared/plugins.ts'",
+  ])
+}
+
+/** Lumovi's own parser and what it reads a plugin to ask for, from the checkout. */
+export function lumoviReader(checkout) {
+  const lumovi = lumoviCode(checkout, [
+    "export { parsePlugin } from './src/shared/plugins.ts'",
+    "export { asks } from './src/shared/plugin-asks.ts'",
+  ])
   // Lumovi's own views of Kubernetes' kinds (the file that stays in Lumovi): no plugin's to show.
   const own = join(checkout, 'src/renderer/src/views')
   const lumovisOwn = readdirSync(own)

@@ -3,9 +3,12 @@ name: Release
 # Publishes the plugins' bundle when a commit on main sets a version in release.json that has no
 # release yet, once Checks passed on that commit.
 #
-# The bundle holds every plugin's file and README; its index holds, for each plugin, its version,
-# the oldest Lumovi it needs, what it asks for and the SHA-256 of each file, with the bundle's own
-# SHA-256, the release's serial and when the index stops being good.
+# The bundle holds every plugin's file and README, and a plugin with code its code: built in this
+# workflow's build job from its source (src/), by the pinned Lumovi's own esbuild with the settings
+# scripts/code.mjs fixes, not minified, and checked without being run. Its index holds, for
+# each plugin, its version, the oldest Lumovi it needs, what it asks for and the SHA-256 of each
+# file (its code's too), with the bundle's own SHA-256, the release's serial and when the index
+# stops being good.
 #
 # Two jobs, so that nothing that's installed can sign. `build` runs in the environment `release`,
 # which only main may deploy to (and which waits for a reviewer, if it's given one:
@@ -159,6 +162,12 @@ jobs:
       # What's published is what was checked: the same checker, again, on the commit itself.
       - name: Check the plugins
         run: node scripts/check.mjs lumovi
+      # Each plugin's code is built and checked again as the bundle is made, by reading it: what
+      # the bundle carries is what this job built. Nothing of a plugin's code runs in this job
+      # (Node's vm is no box, and this job writes what's signed): its sample was run by the checks,
+      # which passed on this commit. Nothing of the checks' reaches this job: it takes no cache and no
+      # artifact of theirs, and installs and builds afresh. Keep it so, or code the checks ran could
+      # reach what's signed.
       - name: Build the bundle and its index
         run: node scripts/bundle.mjs lumovi dist
       - name: Say what was built

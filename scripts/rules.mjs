@@ -14,6 +14,8 @@
  *   holds is the repository's settings (.github/settings): the token reads unless a job asks,
  *   actions are pinned, a fork's pull request waits for approval, and main takes nothing whose
  *   checks haven't passed.
+ * - src/ keeps the plugins' code as it's written, and nothing built or minified: a release's code
+ *   is built by its workflow.
  * - A release is made only on a tag that isn't there yet: each `gh release create`, and each
  *   publishing of a draft (`gh release edit --draft=false`), follows a check of it, in the same step
  *   (a tag anyone who writes can push, and gh, or publishing, would take it).
@@ -129,6 +131,32 @@ export function lockProblems(lock) {
   return problems
 }
 
+/** The longest line a source file here has: it's written to be read. */
+const LINE_AT_MOST = 200
+
+/**
+ * What's wrong with what src/ keeps (`files`: each committed file's path and text): a plugin's
+ * TypeScript and its sample, and the runtime's TypeScript; nothing built, nothing minified. What
+ * a release carries is built by its workflow from these, never taken from a pull request.
+ */
+export function srcProblems(files) {
+  return files.flatMap(({ path, text }) => {
+    if (!/^src\/[a-z][a-z0-9-]*\/(?:[^/]+\/)*[^/]+\.ts$/.test(path)) {
+      return /^src\/[a-z][a-z0-9-]*\/sample(?:\.page)?\.json$/.test(path)
+        ? []
+        : [
+            `${path}: src/ keeps TypeScript and a plugin’s sample, and nothing built: what a release carries is built by its workflow`,
+          ]
+    }
+    const long = text.split('\n').findIndex((line) => line.length > LINE_AT_MOST)
+    return long < 0
+      ? []
+      : [
+          `${path}:${long + 1}: is longer than ${LINE_AT_MOST} characters: source here is written to be read, and never minified`,
+        ]
+  })
+}
+
 if (import.meta.main) {
   const args = process.argv.slice(2)
   const base = args.includes('--base') ? args[args.indexOf('--base') + 1] : undefined
@@ -143,6 +171,8 @@ if (import.meta.main) {
       })()
     : undefined
   const problems = [...releaseProblems(read('release.json'), before), ...lockProblems(read('lumovi.lock.json'))]
+  const kept = execFileSync('git', ['ls-files', '-z', 'src'], { encoding: 'utf8' }).split('\0').filter(Boolean)
+  problems.push(...srcProblems(kept.map((path) => ({ path, text: readFileSync(path, 'utf8') }))))
   const workflows = '.github/workflows'
   for (const file of readdirSync(workflows).filter((name) => /\.ya?ml$/.test(name))) {
     const text = readFileSync(join(workflows, file), 'utf8')

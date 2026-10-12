@@ -1,0 +1,17 @@
+{
+  "opens": { "page": "overview" },
+  "objects": {
+    "/Pod": [
+      {
+        "metadata": { "name": "api", "namespace": "shop", "labels": { "app": "api" } },
+        "spec": { "nodeName": "node-1", "containers": [{ "name": "api", "image": "shop/api:1" }] },
+        "status": { "phase": "Running" }
+      },
+      {
+        "metadata": { "name": "web", "namespace": "shop" },
+        "spec": { "containers": [{ "name": "web", "image": "shop/web:1" }] },
+        "status": { "phase": "Pending" }
+      }
+    ]
+  }
+}

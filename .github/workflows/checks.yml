@@ -1,9 +1,10 @@
 name: Checks
 
 # Every pull request, and every commit on main: each plugin read by Lumovi's own checker at the
-# commit lumovi.lock.json names, which must be on Lumovi's main; each plugin's CRDs fetched again
-# from their sources and compared with what's kept; the bundle built twice and compared; and this
-# repository's own rules.
+# commit lumovi.lock.json names, which must be on Lumovi's main; what each plugin asks for, against
+# the base, in the run's summary; each plugin's code built from its source and checked, and run on
+# its sample through Lumovi's own door; each plugin's CRDs fetched again from their sources and
+# compared with what's kept; the bundle built twice and compared; and this repository's own rules.
 #
 # A pull request's files are a stranger's. Nothing here can reach a secret or write anything:
 # the token can only read, no job asks for more, and none names a secret. A pull request from a
@@ -84,6 +85,17 @@ jobs:
         env:
           BASE: ${{ github.base_ref }}
         run: node scripts/check.mjs lumovi ${BASE:+--base "origin/$BASE"}
+      # The runtime a plugin's page is written with, and the run of a plugin's code on its sample,
+      # each tried against Lumovi's own door from the same checkout; and their types, by its
+      # TypeScript.
+      - name: Test the runtime and the sample run
+        run: npm run -s test:code
+      - name: Check the code's types
+        run: node scripts/types.mjs lumovi
+      # Each plugin's code: built twice the same, from its own source and what allowlist.json lists,
+      # naming nothing a page has no use for, and giving its sample's page at the door.
+      - name: Check the plugins' code
+        run: node scripts/code.mjs lumovi
       - name: Build the bundle twice, and compare
         run: |
           node scripts/bundle.mjs lumovi "$RUNNER_TEMP/first"

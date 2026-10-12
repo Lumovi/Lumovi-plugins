@@ -3,18 +3,24 @@
  *
  *   node scripts/bundle.mjs [lumovi] [out]
  *
- * The bundle, plugins-<version>.json, holds each plugin's file and README as text. The index,
- * plugins-<version>.index.json, holds the bundle's SHA-256 and, for each plugin, its version, the
- * oldest Lumovi it needs, what it asks for (as Lumovi reads it) and the SHA-256 of each of its
- * files as committed; with the release's serial, which only rises, and when the index stops
- * being good. The same commit builds both the same, byte for byte.
+ * The bundle, plugins-<version>.json, holds each plugin's file and README as text, and a plugin
+ * with code its code (plugin.js), built in this run from its source and checked without running
+ * it (code.mjs's `builtCode`: nothing of a plugin's runs where a bundle is made). The
+ * index, plugins-<version>.index.json, holds the bundle's SHA-256 and, for each plugin, its
+ * version, the oldest Lumovi it needs, what it asks for (as Lumovi reads it) and the SHA-256 of
+ * each of its files (its code as built); with the release's serial, which only rises, and when
+ * the index stops being good. The same commit builds both the same, byte for byte.
  */
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { builtCode } from './code.mjs'
 import { checkoutAt, LOCK, lumoviReader } from './lumovi.mjs'
 import { BUNDLED, readPlugins, refuse } from './plugins.mjs'
+
+/** A plugin's code, as the bundle carries it, and as Lumovi takes it (beside its file, by its name). */
+const CODE = 'plugin.js'
 
 /** How long an index is good for: Lumovi takes none past it, so a release comes at least as often. */
 const LIFETIME_DAYS = 180
@@ -28,6 +34,10 @@ const release = JSON.parse(readFileSync('release.json', 'utf8'))
 const { plugins, problems } = readPlugins()
 refuse(problems, 'The plugins’ folders')
 const lumovi = lumoviReader(checkout)
+// Every plugin's code, built here from its source and checked by reading it, never run: this is
+// the process that writes and hashes what's signed. (Its sample was run by the checks, which a
+// release requires to have passed on its commit.)
+const built = builtCode(checkout)
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex')
 
 const bundled = []
@@ -46,6 +56,11 @@ for (const { name, files } of plugins) {
     if (!Buffer.from(text, 'utf8').equals(bytes)) wrong.push(`plugins/${name}/${path}: isn’t UTF-8`)
     return { path, bytes, text }
   })
+  // Its code, as this run built and checked it: never a file of anyone's.
+  if (Object.hasOwn(built, name)) {
+    const { text } = built[name]
+    carried.push({ path: CODE, bytes: Buffer.from(text, 'utf8'), text })
+  }
   bundled.push({
     name,
     version: plugin.version,

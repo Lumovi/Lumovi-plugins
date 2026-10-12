@@ -16,6 +16,11 @@ plugins/karpenter/
 
 A plugin's version is in its `plugin.yaml` (`spec.version`). A change to the file is a newer version.
 
+A plugin can also have pages of its own, drawn by code: `src/<plugin>/`, in TypeScript, written
+with Lumovi's runtime for a page (`src/runtime`), with a sample to run it on. A release builds that
+code from its source and carries it in the bundle; Lumovi runs it in a sealed box, where it reads
+only what its file says, as you, and changes nothing in your cluster.
+
 ## How a plugin is checked
 
 On every pull request, with no secret in reach:
@@ -26,8 +31,14 @@ On every pull request, with no secret in reach:
   refused, saying what and where (`tests/refused` holds what it must refuse, and the checks see that
   it does).
 - **Its CRDs** are fetched again from their sources and must be what's kept in `crds.json`.
+- **Its code**, if it has any, is built twice and must come out the same, from its own source and
+  what `allowlist.json` lists (no dependencies today), not minified. It's run on its sample through
+  Lumovi's own door, held to the door's limits, and must give the page its sample says. What the
+  plugin asks for (what it reads, the Secrets it shows, its actions and pages) is written into the
+  checks' summary, a line for each change.
 - **The bundle** is built twice and must come out the same.
-- **This repository's rules**: a changed plugin (its file or its README) has a newer version; the
+- **This repository's rules**: a changed plugin (its file, its README or its code) has a newer
+  version; `src/` keeps only source and samples, nothing built; the
   release's serial only rises; the checker is Lumovi's own, at a commit on its main; and a lint of
   the workflows: none runs a pull request with this repository's rights, every action is pinned,
   and only the release's publish job may write.

@@ -5,9 +5,13 @@
   "license": "Apache-2.0",
   "scripts": {
     "check": "node scripts/check.mjs lumovi",
+    "code": "node scripts/code.mjs lumovi",
+    "samples": "node scripts/code.mjs lumovi --write",
     "crds": "node scripts/crds.mjs lumovi",
     "bundle": "node scripts/bundle.mjs lumovi dist",
     "rules": "node scripts/rules.mjs",
-    "test": "node --test \"scripts/*.test.mjs\""
+    "types": "node scripts/types.mjs lumovi",
+    "test": "node --test \"scripts/*.test.mjs\"",
+    "test:code": "node --test \"src/**/*.test.ts\" \"tests/code/*.test.mjs\""
   }
 }

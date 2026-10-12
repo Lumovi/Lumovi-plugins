@@ -1,0 +1,6 @@
+{
+  "src/runtime": {
+    "is": "ours",
+    "what": "Lumovi’s runtime for a plugin’s page: it turns the page a plugin describes into the steps Lumovi’s door takes. This repository’s own, tested against the door itself (src/runtime/index.test.ts)."
+  }
+}

@@ -1,0 +1,4 @@
+# The Lumovi checkout the checks run with, and what a build makes.
+/lumovi/
+/dist/
+node_modules/

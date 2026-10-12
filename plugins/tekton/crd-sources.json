@@ -1,0 +1,6 @@
+{
+  "version": "v1.17.0",
+  "files": [
+    "https://github.com/tektoncd/pipeline/releases/download/{version}/release.yaml"
+  ]
+}

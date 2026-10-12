@@ -1,0 +1,6 @@
+{
+  "version": "v2.9.6",
+  "files": [
+    "https://github.com/fluxcd/flux2/releases/download/{version}/install.yaml"
+  ]
+}

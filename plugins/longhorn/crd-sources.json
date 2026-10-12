@@ -1,0 +1,6 @@
+{
+  "version": "v1.13.0",
+  "files": [
+    "https://raw.githubusercontent.com/longhorn/longhorn/{version}/deploy/longhorn.yaml"
+  ]
+}

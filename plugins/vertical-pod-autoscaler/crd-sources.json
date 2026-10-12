@@ -1,0 +1,6 @@
+{
+  "version": "vertical-pod-autoscaler-1.8.0",
+  "files": [
+    "https://raw.githubusercontent.com/kubernetes/autoscaler/{version}/vertical-pod-autoscaler/deploy/vpa-v1-crd-gen.yaml"
+  ]
+}

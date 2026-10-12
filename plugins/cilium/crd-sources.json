@@ -1,0 +1,12 @@
+{
+  "version": "v1.20.2",
+  "files": [
+    "https://raw.githubusercontent.com/cilium/cilium/{version}/pkg/k8s/apis/cilium.io/client/crds/v2/ciliumnetworkpolicies.yaml",
+    "https://raw.githubusercontent.com/cilium/cilium/{version}/pkg/k8s/apis/cilium.io/client/crds/v2/ciliumclusterwidenetworkpolicies.yaml",
+    "https://raw.githubusercontent.com/cilium/cilium/{version}/pkg/k8s/apis/cilium.io/client/crds/v2/ciliumnodes.yaml",
+    "https://raw.githubusercontent.com/cilium/cilium/{version}/pkg/k8s/apis/cilium.io/client/crds/v2/ciliumendpoints.yaml",
+    "https://raw.githubusercontent.com/cilium/cilium/{version}/pkg/k8s/apis/cilium.io/client/crds/v2/ciliumidentities.yaml",
+    "https://raw.githubusercontent.com/cilium/cilium/{version}/pkg/k8s/apis/cilium.io/client/crds/v2/ciliumloadbalancerippools.yaml",
+    "https://raw.githubusercontent.com/cilium/cilium/{version}/pkg/k8s/apis/cilium.io/client/crds/v2/ciliumegressgatewaypolicies.yaml"
+  ]
+}

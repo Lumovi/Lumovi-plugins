@@ -1,0 +1,255 @@
+name: Release
+
+# Publishes the plugins' bundle when a commit on main sets a version in release.json that has no
+# release yet, once Checks passed on that commit.
+#
+# The bundle holds every plugin's file and README; its index holds, for each plugin, its version,
+# the oldest Lumovi it needs, what it asks for and the SHA-256 of each file, with the bundle's own
+# SHA-256, the release's serial and when the index stops being good.
+#
+# Two jobs, so that nothing that's installed can sign. `build` runs in the environment `release`,
+# which only main may deploy to (and which waits for a reviewer, if it's given one:
+# .github/settings/environments/release.json), then checks every plugin again with Lumovi's checker, at a commit that's on Lumovi's main,
+# and builds the bundle and its index, with a token that can only read. `publish` installs and
+# runs nothing of anyone's but cosign, the attestation action and gh: it takes what build made,
+# only if it's byte for byte what build said, signs it with cosign by this workflow's own identity
+# (no key is kept anywhere), attests it as built here from this commit, and attaches it, with the
+# attestation, to a release of a version that has no tag yet: the preflight checks it, and publish
+# again just before it makes the release, since a tag that's there would be taken whatever commit it
+# points at. Those checks hold the tag, not a rule: anyone who can write could push one, and once
+# made a tag is never moved or deleted (.github/settings/rulesets).
+# (Its check of the digests says it has what build made, not that build was honest: build's
+# honesty is the checks'. What it keeps out is the signing identity, which
+# nothing build installs can reach.)
+#
+# To check a release, as anyone can:
+#   cosign verify-blob plugins-<version>.index.json \
+#     --bundle plugins-<version>.index.json.sigstore.json \
+#     --certificate-identity https://github.com/Lumovi/Lumovi-plugins/.github/workflows/release.yml@refs/heads/main \
+#     --certificate-oidc-issuer https://token.actions.githubusercontent.com
+#   gh attestation verify plugins-<version>.json --repo Lumovi/Lumovi-plugins
+on:
+  workflow_run:
+    workflows: [Checks]
+    types: [completed]
+    branches: [main]
+  # By hand, to retry a release that failed before its tag was made. One that failed after needs a
+  # new version: the tag stays, as every tag does.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: A version with no release yet
+    # A push to main that Checks passed (never a pull request's run), or a retry from main.
+    if: >-
+      (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      # To see that Checks passed, for a run by hand.
+      actions: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      commit: ${{ steps.version.outputs.commit }}
+      release: ${{ steps.version.outputs.release }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+      # (A run by hand starts from main, not from Checks: it asks that they passed on this commit.)
+      - name: Check that Checks passed on this commit
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          commit=$(git rev-parse HEAD)
+          passed=$(gh api "repos/$GH_REPO/actions/workflows/checks.yml/runs?head_sha=$commit&event=push&status=success" --jq .total_count)
+          if [ "$passed" = 0 ]; then
+            echo "Checks haven't passed on $commit from a push to main: nothing to release."
+            exit 1
+          fi
+      - name: Find the version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          version=$(node -p "require('./release.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" > /dev/null 2>&1; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "$version is released already: nothing to do."
+            exit 0
+          fi
+          # A tag of this version, made any other way, would be the one its release took.
+          if found=$(gh api "repos/$GH_REPO/git/ref/tags/v$version" 2>&1); then
+            echo "v$version is already a tag; raise the version."
+            exit 1
+          elif [[ "$found" != *"HTTP 404"* ]]; then
+            echo "Couldn't tell whether v$version is a tag: $found"
+            exit 1
+          fi
+          echo "release=true" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Check and build ${{ needs.preflight.outputs.version }}
+    needs: preflight
+    if: needs.preflight.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Only from main; it waits here for the environment's reviewer, if it has one.
+    environment: release
+    # Lumovi's packages run here: this job can only read, and holds nothing that signs.
+    permissions:
+      contents: read
+    outputs:
+      digests: ${{ steps.digests.outputs.digests }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.preflight.outputs.commit }}
+          persist-credentials: false
+      - name: Find the Lumovi commit to check with
+        id: lock
+        run: |
+          echo "repository=$(node -p "require('./lumovi.lock.json').repository")" >> "$GITHUB_OUTPUT"
+          echo "commit=$(node -p "require('./lumovi.lock.json').commit")" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: ${{ steps.lock.outputs.repository }}
+          ref: ${{ steps.lock.outputs.commit }}
+          path: lumovi
+          persist-credentials: false
+          # (Main's history too: the checker must be one Lumovi merged.)
+          fetch-depth: 0
+      - name: Check that the checker is on Lumovi's main
+        env:
+          COMMIT: ${{ steps.lock.outputs.commit }}
+        run: git -C lumovi merge-base --is-ancestor "$COMMIT" origin/main
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: lumovi/.nvmrc
+      - name: Install Lumovi's checker
+        working-directory: lumovi
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: npm ci --ignore-scripts
+      # What's published is what was checked: the same checker, again, on the commit itself.
+      - name: Check the plugins
+        run: node scripts/check.mjs lumovi
+      - name: Build the bundle and its index
+        run: node scripts/bundle.mjs lumovi dist
+      - name: Say what was built
+        id: digests
+        run: |
+          {
+            echo 'digests<<END'
+            (cd dist && sha256sum plugins-*.json)
+            echo END
+          } >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: plugins-${{ needs.preflight.outputs.version }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Sign and publish ${{ needs.preflight.outputs.version }}
+    needs: [preflight, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The only job that may write, or sign: it checks out nothing, and installs nothing but cosign.
+    permissions:
+      # The release, and its tag.
+      contents: write
+      # This workflow's own identity, which signs: no key is kept.
+      id-token: write
+      # The provenance attestation.
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: plugins-${{ needs.preflight.outputs.version }}
+          path: dist
+      # Only what build made, byte for byte, and nothing else.
+      - name: Check it's what was built
+        env:
+          DIGESTS: ${{ needs.build.outputs.digests }}
+        run: |
+          cd dist
+          printf '%s\n' "$DIGESTS" | sha256sum --check --strict
+          [ "$(find . -type f | wc -l)" -eq "$(printf '%s\n' "$DIGESTS" | grep -c .)" ]
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4
+      - name: Sign them
+        run: |
+          for file in dist/plugins-*.json; do
+            cosign sign-blob --yes --bundle "$file.sigstore.json" "$file"
+          done
+      # As anyone checking them will: by this repository's workflow on main, and nothing else.
+      - name: Check the signatures
+        env:
+          IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/release.yml@refs/heads/main
+        run: |
+          for file in dist/plugins-*.json; do
+            case "$file" in *.sigstore.json) continue ;; esac
+            cosign verify-blob "$file" --bundle "$file.sigstore.json" \
+              --certificate-identity "$IDENTITY" \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com
+          done
+      - name: Attest their provenance
+        id: attest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-path: |
+            dist/plugins-${{ needs.preflight.outputs.version }}.json
+            dist/plugins-${{ needs.preflight.outputs.version }}.index.json
+      # Beside them, so a build that takes them can check it without asking GitHub's API.
+      - name: Keep the attestation with them
+        env:
+          ATTESTATION: ${{ steps.attest.outputs.bundle-path }}
+          VERSION: ${{ needs.preflight.outputs.version }}
+        run: cp "$ATTESTATION" "dist/plugins-$VERSION.attestation.json"
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.preflight.outputs.version }}
+          COMMIT: ${{ needs.preflight.outputs.commit }}
+        run: |
+          cat > "$RUNNER_TEMP/notes.md" <<EOF
+          The plugins Lumovi comes with, $VERSION: the bundle, its index, their signatures, and the
+          attestation that they were built here.
+
+          To check them:
+
+              cosign verify-blob plugins-$VERSION.index.json \\
+                --bundle plugins-$VERSION.index.json.sigstore.json \\
+                --certificate-identity https://github.com/$GH_REPO/.github/workflows/release.yml@refs/heads/main \\
+                --certificate-oidc-issuer https://token.actions.githubusercontent.com
+              gh attestation verify plugins-$VERSION.json --repo $GH_REPO
+          EOF
+          # (Asked again here: gh makes a release on a tag that's there, whatever --target says.)
+          if found=$(gh api "repos/$GH_REPO/git/ref/tags/v$VERSION" 2>&1); then
+            echo "v$VERSION is already a tag; raise the version."
+            exit 1
+          elif [[ "$found" != *"HTTP 404"* ]]; then
+            echo "Couldn't tell whether v$VERSION is a tag: $found"
+            exit 1
+          fi
+          gh release create "v$VERSION" dist/plugins-* --target "$COMMIT" \
+            --title "Plugins $VERSION" --notes-file "$RUNNER_TEMP/notes.md"

@@ -1,0 +1,11 @@
+{
+  "version": "v0.34.0",
+  "files": [
+    "https://raw.githubusercontent.com/aquasecurity/trivy-operator/{version}/deploy/helm/crds/aquasecurity.github.io_vulnerabilityreports.yaml",
+    "https://raw.githubusercontent.com/aquasecurity/trivy-operator/{version}/deploy/helm/crds/aquasecurity.github.io_configauditreports.yaml",
+    "https://raw.githubusercontent.com/aquasecurity/trivy-operator/{version}/deploy/helm/crds/aquasecurity.github.io_exposedsecretreports.yaml",
+    "https://raw.githubusercontent.com/aquasecurity/trivy-operator/{version}/deploy/helm/crds/aquasecurity.github.io_rbacassessmentreports.yaml",
+    "https://raw.githubusercontent.com/aquasecurity/trivy-operator/{version}/deploy/helm/crds/aquasecurity.github.io_clusterrbacassessmentreports.yaml",
+    "https://raw.githubusercontent.com/aquasecurity/trivy-operator/{version}/deploy/helm/crds/aquasecurity.github.io_clustercompliancereports.yaml"
+  ]
+}

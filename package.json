@@ -1,0 +1,13 @@
+{
+  "name": "lumovi-plugins",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "check": "node scripts/check.mjs lumovi",
+    "crds": "node scripts/crds.mjs lumovi",
+    "bundle": "node scripts/bundle.mjs lumovi dist",
+    "rules": "node scripts/rules.mjs",
+    "test": "node --test \"scripts/*.test.mjs\""
+  }
+}

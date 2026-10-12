@@ -1,0 +1,6 @@
+{
+  "version": "v0.75.0",
+  "files": [
+    "https://github.com/VictoriaMetrics/operator/releases/download/{version}/crd.yaml"
+  ]
+}

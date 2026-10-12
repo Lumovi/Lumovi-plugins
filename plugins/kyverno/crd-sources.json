@@ -1,0 +1,13 @@
+{
+  "version": "v1.19.1",
+  "files": [
+    "https://raw.githubusercontent.com/kyverno/kyverno/{version}/config/crds/kyverno/kyverno.io_clusterpolicies.yaml",
+    "https://raw.githubusercontent.com/kyverno/kyverno/{version}/config/crds/kyverno/kyverno.io_policies.yaml",
+    "https://raw.githubusercontent.com/kyverno/kyverno/{version}/config/crds/kyverno/kyverno.io_policyexceptions.yaml",
+    "https://raw.githubusercontent.com/kyverno/kyverno/{version}/config/crds/kyverno/kyverno.io_clustercleanuppolicies.yaml",
+    "https://raw.githubusercontent.com/kyverno/kyverno/{version}/config/crds/kyverno/kyverno.io_cleanuppolicies.yaml",
+    "https://raw.githubusercontent.com/kyverno/kyverno/{version}/config/crds/policies.kyverno.io/policies.kyverno.io_validatingpolicies.yaml",
+    "https://raw.githubusercontent.com/kyverno/kyverno/{version}/config/crds/policyreport/wgpolicyk8s.io_policyreports.yaml",
+    "https://raw.githubusercontent.com/kyverno/kyverno/{version}/config/crds/policyreport/wgpolicyk8s.io_clusterpolicyreports.yaml"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "version": "v3.5.3",
+  "files": [
+    "https://raw.githubusercontent.com/argoproj/argo-cd/{version}/manifests/crds/application-crd.yaml",
+    "https://raw.githubusercontent.com/argoproj/argo-cd/{version}/manifests/crds/applicationset-crd.yaml",
+    "https://raw.githubusercontent.com/argoproj/argo-cd/{version}/manifests/crds/appproject-crd.yaml"
+  ]
+}

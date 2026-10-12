@@ -1,0 +1,10 @@
+{
+  "version": "v1.10.0",
+  "files": [
+    "https://raw.githubusercontent.com/argoproj/argo-rollouts/{version}/manifests/crds/rollout-crd.yaml",
+    "https://raw.githubusercontent.com/argoproj/argo-rollouts/{version}/manifests/crds/analysis-run-crd.yaml",
+    "https://raw.githubusercontent.com/argoproj/argo-rollouts/{version}/manifests/crds/analysis-template-crd.yaml",
+    "https://raw.githubusercontent.com/argoproj/argo-rollouts/{version}/manifests/crds/cluster-analysis-template-crd.yaml",
+    "https://raw.githubusercontent.com/argoproj/argo-rollouts/{version}/manifests/crds/experiment-crd.yaml"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "version": "1.31.1",
+  "files": [
+    "https://raw.githubusercontent.com/istio/istio/{version}/manifests/charts/base/files/crd-all.gen.yaml"
+  ]
+}

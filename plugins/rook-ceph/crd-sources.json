@@ -1,0 +1,6 @@
+{
+  "version": "v1.20.8",
+  "files": [
+    "https://raw.githubusercontent.com/rook/rook/{version}/deploy/examples/crds.yaml"
+  ]
+}

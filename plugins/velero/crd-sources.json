@@ -1,0 +1,9 @@
+{
+  "version": "v1.18.4",
+  "files": [
+    "https://raw.githubusercontent.com/vmware-tanzu/velero/{version}/config/crd/v1/bases/velero.io_backups.yaml",
+    "https://raw.githubusercontent.com/vmware-tanzu/velero/{version}/config/crd/v1/bases/velero.io_restores.yaml",
+    "https://raw.githubusercontent.com/vmware-tanzu/velero/{version}/config/crd/v1/bases/velero.io_schedules.yaml",
+    "https://raw.githubusercontent.com/vmware-tanzu/velero/{version}/config/crd/v1/bases/velero.io_backupstoragelocations.yaml"
+  ]
+}

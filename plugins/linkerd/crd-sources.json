@@ -1,0 +1,37 @@
+{
+  "version": "edge-26.9.3",
+  "files": [
+    {
+      "url": "https://raw.githubusercontent.com/linkerd/linkerd2/{version}/charts/linkerd-crds/templates/policy/server.yaml",
+      "helm": true
+    },
+    {
+      "url": "https://raw.githubusercontent.com/linkerd/linkerd2/{version}/charts/linkerd-crds/templates/policy/server-authorization.yaml",
+      "helm": true
+    },
+    {
+      "url": "https://raw.githubusercontent.com/linkerd/linkerd2/{version}/charts/linkerd-crds/templates/policy/authorization-policy.yaml",
+      "helm": true
+    },
+    {
+      "url": "https://raw.githubusercontent.com/linkerd/linkerd2/{version}/charts/linkerd-crds/templates/policy/httproute.yaml",
+      "helm": true
+    },
+    {
+      "url": "https://raw.githubusercontent.com/linkerd/linkerd2/{version}/charts/linkerd-crds/templates/policy/meshtls-authentication.yaml",
+      "helm": true
+    },
+    {
+      "url": "https://raw.githubusercontent.com/linkerd/linkerd2/{version}/charts/linkerd-crds/templates/policy/network-authentication.yaml",
+      "helm": true
+    },
+    {
+      "url": "https://raw.githubusercontent.com/linkerd/linkerd2/{version}/charts/linkerd-crds/templates/policy/egress-network.yaml",
+      "helm": true
+    },
+    {
+      "url": "https://raw.githubusercontent.com/linkerd/linkerd2/{version}/charts/linkerd-crds/templates/serviceprofile.yaml",
+      "helm": true
+    }
+  ]
+}

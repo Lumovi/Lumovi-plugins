@@ -1,0 +1,6 @@
+{
+  "version": "v1.21.2",
+  "files": [
+    "https://github.com/cert-manager/cert-manager/releases/download/{version}/cert-manager.crds.yaml"
+  ]
+}

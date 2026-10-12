@@ -1,0 +1,10 @@
+{
+  "version": "v2.4.2",
+  "files": [
+    "https://raw.githubusercontent.com/crossplane/crossplane/{version}/cluster/crds/pkg.crossplane.io_providers.yaml",
+    "https://raw.githubusercontent.com/crossplane/crossplane/{version}/cluster/crds/pkg.crossplane.io_configurations.yaml",
+    "https://raw.githubusercontent.com/crossplane/crossplane/{version}/cluster/crds/pkg.crossplane.io_functions.yaml",
+    "https://raw.githubusercontent.com/crossplane/crossplane/{version}/cluster/crds/apiextensions.crossplane.io_compositeresourcedefinitions.yaml",
+    "https://raw.githubusercontent.com/crossplane/crossplane/{version}/cluster/crds/apiextensions.crossplane.io_compositions.yaml"
+  ]
+}

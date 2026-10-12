@@ -1,0 +1,6 @@
+{
+  "version": "v0.40.0",
+  "files": [
+    "https://raw.githubusercontent.com/bitnami-labs/sealed-secrets/{version}/helm/sealed-secrets/crds/bitnami.com_sealedsecrets.yaml"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "version": "v2.21.0",
+  "files": [
+    "https://github.com/kedacore/keda/releases/download/{version}/keda-{number}-crds.yaml"
+  ]
+}

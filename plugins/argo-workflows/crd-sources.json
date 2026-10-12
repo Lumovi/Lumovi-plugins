@@ -1,0 +1,9 @@
+{
+  "version": "v4.1.4",
+  "files": [
+    "https://raw.githubusercontent.com/argoproj/argo-workflows/{version}/manifests/base/crds/full/argoproj.io_workflows.yaml",
+    "https://raw.githubusercontent.com/argoproj/argo-workflows/{version}/manifests/base/crds/full/argoproj.io_workflowtemplates.yaml",
+    "https://raw.githubusercontent.com/argoproj/argo-workflows/{version}/manifests/base/crds/full/argoproj.io_clusterworkflowtemplates.yaml",
+    "https://raw.githubusercontent.com/argoproj/argo-workflows/{version}/manifests/base/crds/full/argoproj.io_cronworkflows.yaml"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "version": "v1.30.1",
+  "files": [
+    "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/{version}/config/crd/bases/postgresql.cnpg.io_clusters.yaml",
+    "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/{version}/config/crd/bases/postgresql.cnpg.io_poolers.yaml",
+    "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/{version}/config/crd/bases/postgresql.cnpg.io_backups.yaml",
+    "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/{version}/config/crd/bases/postgresql.cnpg.io_scheduledbackups.yaml",
+    "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/{version}/config/crd/bases/postgresql.cnpg.io_databases.yaml"
+  ]
+}

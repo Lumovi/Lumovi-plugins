@@ -1,0 +1,15 @@
+# A field no plugin has: refused, and said so, wherever it is in the file.
+apiVersion: lumovi.dev/v1beta1
+kind: Plugin
+metadata:
+  name: unknown-field
+spec:
+  version: 1.0.0
+  needs:
+    lumovi: 1.0.0
+  groups:
+    - gadgets.example.com
+  network: true
+  views:
+    - kinds:
+        - { group: gadgets.example.com, kind: Gadget }

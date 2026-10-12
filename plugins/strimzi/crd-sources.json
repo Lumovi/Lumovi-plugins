@@ -1,0 +1,6 @@
+{
+  "version": "1.2.0",
+  "files": [
+    "https://github.com/strimzi/strimzi-kafka-operator/releases/download/{version}/strimzi-crds-{number}.yaml"
+  ]
+}

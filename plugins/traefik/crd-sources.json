@@ -1,0 +1,6 @@
+{
+  "version": "v3.7.13",
+  "files": [
+    "https://raw.githubusercontent.com/traefik/traefik/{version}/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml"
+  ]
+}

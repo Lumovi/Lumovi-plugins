@@ -1,0 +1,6 @@
+{
+  "version": "knative-v1.23.0",
+  "files": [
+    "https://github.com/knative/serving/releases/download/{version}/serving-crds.yaml"
+  ]
+}

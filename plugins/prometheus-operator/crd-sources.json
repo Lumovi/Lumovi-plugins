@@ -1,0 +1,6 @@
+{
+  "version": "v0.94.1",
+  "files": [
+    "https://github.com/prometheus-operator/prometheus-operator/releases/download/{version}/stripped-down-crds.yaml"
+  ]
+}

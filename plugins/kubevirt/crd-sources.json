@@ -1,0 +1,35 @@
+{
+  "version": "d373c2da9702bc9509a004db83e57263fe3bdfc1",
+  "files": [
+    {
+      "schema": "https://raw.githubusercontent.com/datreeio/CRDs-catalog/{version}/kubevirt.io/virtualmachine_v1.json",
+      "group": "kubevirt.io",
+      "kind": "VirtualMachine",
+      "apiVersion": "v1"
+    },
+    {
+      "schema": "https://raw.githubusercontent.com/datreeio/CRDs-catalog/{version}/kubevirt.io/virtualmachineinstance_v1.json",
+      "group": "kubevirt.io",
+      "kind": "VirtualMachineInstance",
+      "apiVersion": "v1"
+    },
+    {
+      "schema": "https://raw.githubusercontent.com/datreeio/CRDs-catalog/{version}/kubevirt.io/virtualmachineinstancemigration_v1.json",
+      "group": "kubevirt.io",
+      "kind": "VirtualMachineInstanceMigration",
+      "apiVersion": "v1"
+    },
+    {
+      "schema": "https://raw.githubusercontent.com/datreeio/CRDs-catalog/{version}/cdi.kubevirt.io/datavolume_v1beta1.json",
+      "group": "cdi.kubevirt.io",
+      "kind": "DataVolume",
+      "apiVersion": "v1beta1"
+    },
+    {
+      "schema": "https://raw.githubusercontent.com/datreeio/CRDs-catalog/{version}/cdi.kubevirt.io/datasource_v1beta1.json",
+      "group": "cdi.kubevirt.io",
+      "kind": "DataSource",
+      "apiVersion": "v1beta1"
+    }
+  ]
+}

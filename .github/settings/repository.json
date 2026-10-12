@@ -1,0 +1,36 @@
+{
+  "repository": {
+    "visibility": "public",
+    "description": "The plugins Lumovi comes with: checked by Lumovi's own checker, signed in one bundle.",
+    "homepage": "https://lumovi.dev",
+    "has_issues": true,
+    "has_projects": false,
+    "has_wiki": false,
+    "has_discussions": false,
+    "allow_merge_commit": false,
+    "allow_squash_merge": false,
+    "allow_rebase_merge": true,
+    "allow_auto_merge": false,
+    "allow_update_branch": true,
+    "delete_branch_on_merge": true,
+    "security_and_analysis": {
+      "secret_scanning": {
+        "status": "enabled"
+      },
+      "secret_scanning_push_protection": {
+        "status": "enabled"
+      }
+    }
+  },
+  "private_vulnerability_reporting": true,
+  "access": [
+    {
+      "team": "plugin-maintainers",
+      "permission": "maintain"
+    }
+  ],
+  "team": {
+    "name": "plugin-maintainers",
+    "privacy": "closed"
+  }
+}

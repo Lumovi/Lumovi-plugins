@@ -1,0 +1,12 @@
+{
+  "version": "v1.14.1",
+  "files": [
+    "https://raw.githubusercontent.com/aws/karpenter-provider-aws/{version}/pkg/apis/crds/karpenter.sh_nodepools.yaml",
+    "https://raw.githubusercontent.com/aws/karpenter-provider-aws/{version}/pkg/apis/crds/karpenter.sh_nodeclaims.yaml",
+    "https://raw.githubusercontent.com/aws/karpenter-provider-aws/{version}/pkg/apis/crds/karpenter.k8s.aws_ec2nodeclasses.yaml",
+    {
+      "url": "https://raw.githubusercontent.com/Azure/karpenter-provider-azure/{version}/pkg/apis/crds/karpenter.azure.com_aksnodeclasses.yaml",
+      "version": "v1.14.3"
+    }
+  ]
+}

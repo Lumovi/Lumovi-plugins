@@ -1,0 +1,14 @@
+{
+  "version": "v3.23.1",
+  "files": [
+    "https://raw.githubusercontent.com/open-policy-agent/gatekeeper/{version}/charts/gatekeeper/crds/constrainttemplate-customresourcedefinition.yaml",
+    "https://raw.githubusercontent.com/open-policy-agent/gatekeeper/{version}/charts/gatekeeper/crds/config-customresourcedefinition.yaml",
+    "https://raw.githubusercontent.com/open-policy-agent/gatekeeper/{version}/charts/gatekeeper/crds/assign-customresourcedefinition.yaml",
+    "https://raw.githubusercontent.com/open-policy-agent/gatekeeper/{version}/charts/gatekeeper/crds/assignmetadata-customresourcedefinition.yaml",
+    "https://raw.githubusercontent.com/open-policy-agent/gatekeeper/{version}/charts/gatekeeper/crds/assignimage-customresourcedefinition.yaml",
+    "https://raw.githubusercontent.com/open-policy-agent/gatekeeper/{version}/charts/gatekeeper/crds/modifyset-customresourcedefinition.yaml",
+    "https://raw.githubusercontent.com/open-policy-agent/gatekeeper/{version}/charts/gatekeeper/crds/expansiontemplate-customresourcedefinition.yaml",
+    "https://raw.githubusercontent.com/open-policy-agent/gatekeeper/{version}/charts/gatekeeper/crds/provider-customresourcedefinition.yaml",
+    "https://raw.githubusercontent.com/open-policy-agent/gatekeeper/{version}/charts/gatekeeper/crds/syncset-customresourcedefinition.yaml"
+  ]
+}

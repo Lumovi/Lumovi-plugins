@@ -1,0 +1,8 @@
+{
+  "version": "v8.6.0",
+  "files": [
+    "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml",
+    "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml",
+    "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml"
+  ]
+}

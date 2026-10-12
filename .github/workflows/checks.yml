@@ -1,0 +1,128 @@
+name: Checks
+
+# Every pull request, and every commit on main: each plugin read by Lumovi's own checker at the
+# commit lumovi.lock.json names, which must be on Lumovi's main; each plugin's CRDs fetched again
+# from their sources and compared with what's kept; the bundle built twice and compared; and this
+# repository's own rules.
+#
+# A pull request's files are a stranger's. Nothing here can reach a secret or write anything:
+# the token can only read, no job asks for more, and none names a secret. A pull request from a
+# fork waits for a maintainer's approval before it runs at all (.github/settings/actions.json).
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rules:
+    name: This repository's rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          # (The base too: what a pull request changes is measured against it.)
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: Test the scripts
+        run: npm test
+      - name: Check the rules
+        env:
+          BASE: ${{ github.base_ref }}
+        run: node scripts/rules.mjs ${BASE:+--base "origin/$BASE"}
+
+  checker:
+    name: Lumovi's checker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Find the Lumovi commit to check with
+        id: lock
+        run: |
+          echo "repository=$(node -p "require('./lumovi.lock.json').repository")" >> "$GITHUB_OUTPUT"
+          echo "commit=$(node -p "require('./lumovi.lock.json').commit")" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: ${{ steps.lock.outputs.repository }}
+          ref: ${{ steps.lock.outputs.commit }}
+          path: lumovi
+          persist-credentials: false
+          # (Main's history too: the checker must be one Lumovi merged.)
+          fetch-depth: 0
+      - name: Check that the checker is on Lumovi's main
+        env:
+          COMMIT: ${{ steps.lock.outputs.commit }}
+        run: git -C lumovi merge-base --is-ancestor "$COMMIT" origin/main
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: lumovi/.nvmrc
+          cache: npm
+          cache-dependency-path: lumovi/package-lock.json
+      # What the checker needs (its test runner, its parser's packages, esbuild), and nothing run
+      # while installing: no app download, no native build.
+      - name: Install Lumovi's checker
+        working-directory: lumovi
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: npm ci --ignore-scripts
+      - name: Check the plugins
+        env:
+          BASE: ${{ github.base_ref }}
+        run: node scripts/check.mjs lumovi ${BASE:+--base "origin/$BASE"}
+      - name: Build the bundle twice, and compare
+        run: |
+          node scripts/bundle.mjs lumovi "$RUNNER_TEMP/first"
+          node scripts/bundle.mjs lumovi "$RUNNER_TEMP/second"
+          diff -r "$RUNNER_TEMP/first" "$RUNNER_TEMP/second"
+
+  crds:
+    name: CRDs as their sources have them
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Find the Lumovi commit to fetch with
+        id: lock
+        run: |
+          echo "repository=$(node -p "require('./lumovi.lock.json').repository")" >> "$GITHUB_OUTPUT"
+          echo "commit=$(node -p "require('./lumovi.lock.json').commit")" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: ${{ steps.lock.outputs.repository }}
+          ref: ${{ steps.lock.outputs.commit }}
+          path: lumovi
+          persist-credentials: false
+          # (Main's history too: the checker must be one Lumovi merged.)
+          fetch-depth: 0
+      - name: Check that the checker is on Lumovi's main
+        env:
+          COMMIT: ${{ steps.lock.outputs.commit }}
+        run: git -C lumovi merge-base --is-ancestor "$COMMIT" origin/main
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: lumovi/.nvmrc
+          cache: npm
+          cache-dependency-path: lumovi/package-lock.json
+      - name: Install Lumovi's CRD fetcher
+        working-directory: lumovi
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: npm ci --ignore-scripts
+      - name: Fetch every plugin's CRDs, and compare
+        run: node scripts/crds.mjs lumovi --check

@@ -14,10 +14,12 @@ name: Release
 # runs nothing of anyone's but cosign, the attestation action and gh: it takes what build made,
 # only if it's byte for byte what build said, signs it with cosign by this workflow's own identity
 # (no key is kept anywhere), attests it as built here from this commit, and attaches it, with the
-# attestation, to a release of a version that has no tag yet: the preflight checks it, and publish
-# again just before it makes the release, since a tag that's there would be taken whatever commit it
-# points at. Those checks hold the tag, not a rule: anyone who can write could push one, and once
-# made a tag is never moved or deleted (.github/settings/rulesets).
+# attestation, to a draft release, checks every file is on the draft as built, and only then
+# publishes it: a release is immutable once published, and takes no file after. Its version has no
+# tag yet: the preflight checks it, and publish again before the draft and just before publishing
+# it, since a tag that's there would be taken whatever commit it points at. Those checks hold the
+# tag, not a rule: anyone who can write could push one, and once made a tag is never moved or
+# deleted (.github/settings/rulesets).
 # (Its check of the digests says it has what build made, not that build was honest: build's
 # honesty is the checks'. What it keeps out is the signing identity, which
 # nothing build installs can reach.)
@@ -33,8 +35,8 @@ on:
     workflows: [Checks]
     types: [completed]
     branches: [main]
-  # By hand, to retry a release that failed before its tag was made. One that failed after needs a
-  # new version: the tag stays, as every tag does.
+  # By hand, to retry a release that failed before its tag was made (if it left a draft, delete the
+  # draft first). One that failed after needs a new version: the tag stays, as every tag does.
   workflow_dispatch:
 
 permissions:
@@ -90,7 +92,13 @@ jobs:
           version=$(node -p "require('./release.json').version")
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          if gh release view "v$version" > /dev/null 2>&1; then
+          if draft=$(gh release view "v$version" --json isDraft --jq .isDraft 2> /dev/null); then
+            # (A draft is a run's that stopped before publishing it, if this token can see it at
+            # all; publish, which can, asks again.)
+            if [ "$draft" = true ]; then
+              echo "v$version is a draft, left by a run that stopped before publishing it: delete the draft and run Release again."
+              exit 1
+            fi
             echo "release=false" >> "$GITHUB_OUTPUT"
             echo "$version is released already: nothing to do."
             exit 0
@@ -243,13 +251,41 @@ jobs:
                 --certificate-oidc-issuer https://token.actions.githubusercontent.com
               gh attestation verify plugins-$VERSION.json --repo $GH_REPO
           EOF
-          # (Asked again here: gh makes a release on a tag that's there, whatever --target says.)
-          if found=$(gh api "repos/$GH_REPO/git/ref/tags/v$VERSION" 2>&1); then
-            echo "v$VERSION is already a tag; raise the version."
+          # (Asked again here: gh makes a release on a tag that's there, and publishing a draft
+          # takes one, whatever --target says.)
+          untagged() {
+            if found=$(gh api "repos/$GH_REPO/git/ref/tags/v$VERSION" 2>&1); then
+              echo "v$VERSION is already a tag; raise the version."
+              exit 1
+            elif [[ "$found" != *"HTTP 404"* ]]; then
+              echo "Couldn't tell whether v$VERSION is a tag: $found"
+              exit 1
+            fi
+          }
+          untagged
+          # (A draft that's there is a run's that stopped before publishing it.)
+          if found=$(gh release view "v$VERSION" --json isDraft --jq .isDraft 2>&1); then
+            if [ "$found" = true ]; then
+              echo "v$VERSION is a draft, left by a run that stopped before publishing it: delete the draft and run Release again."
+            else
+              echo "v$VERSION is released already."
+            fi
             exit 1
-          elif [[ "$found" != *"HTTP 404"* ]]; then
-            echo "Couldn't tell whether v$VERSION is a tag: $found"
+          elif [[ "$found" != *"release not found"* ]]; then
+            echo "Couldn't tell whether v$VERSION has a release: $found"
             exit 1
           fi
-          gh release create "v$VERSION" dist/plugins-* --target "$COMMIT" \
+          # A draft takes its files and makes no tag; once published, it takes neither.
+          gh release create "v$VERSION" dist/plugins-* --draft --target "$COMMIT" \
             --title "Plugins $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+          # Every file on the draft, uploaded, by its name and SHA-256, and nothing else.
+          (cd dist && sha256sum plugins-*) | sort > "$RUNNER_TEMP/made"
+          gh release view "v$VERSION" --json isDraft,assets --jq '
+            select(.isDraft) | .assets[] | select(.state == "uploaded")
+            | "\(.digest // "" | ltrimstr("sha256:"))  \(.name)"' | sort > "$RUNNER_TEMP/attached"
+          if ! diff "$RUNNER_TEMP/made" "$RUNNER_TEMP/attached"; then
+            echo "The draft of v$VERSION doesn't hold every file as built (above: < built, > on the draft); it's left unpublished."
+            exit 1
+          fi
+          untagged
+          gh release edit "v$VERSION" --draft=false

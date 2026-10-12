@@ -140,6 +140,22 @@ test('a release is made only on a tag that isn’t there yet: its own step asks 
     workflowProblems('release.yml', step(`          # git/ref/tags/v$VERSION\n${made}`)),
     problem,
   )
+  // Publishing a draft takes the tag as making a release does; editing one that stays a draft doesn't.
+  const draft = '          gh release create "v$VERSION" dist/* --draft --target "$COMMIT"\n'
+  const published = '          gh release edit "v$VERSION" --draft=false\n'
+  assert.deepEqual(workflowProblems('release.yml', step(asked + draft + asked + published)), [])
+  assert.deepEqual(workflowProblems('release.yml', step(asked + draft + published)), [])
+  assert.deepEqual(workflowProblems('release.yml', step(draft + asked + published)), problem)
+  assert.deepEqual(
+    workflowProblems('release.yml', `${step(asked + draft)}      - name: Then\n        run: |\n${published}`),
+    [
+      'release.yml: gh release edit --draft=false should follow a check, in its own step, that the release’s tag doesn’t exist yet (git/ref/tags/v…)',
+    ],
+  )
+  assert.deepEqual(
+    workflowProblems('release.yml', step('          gh release edit "v$VERSION" --notes-file notes.md\n')),
+    [],
+  )
 })
 
 test('only the release’s publish job asks to write, and nothing asks for everything', () => {

@@ -14,8 +14,9 @@
  *   holds is the repository's settings (.github/settings): the token reads unless a job asks,
  *   actions are pinned, a fork's pull request waits for approval, and a pull request is a code
  *   owner's to approve (but for the one exception in rulesets/main-reviews.json, for now).
- * - A release is made only on a tag that isn't there yet: each `gh release create` follows a check
- *   of it, in the same step (a tag anyone who writes can push, and gh would take it).
+ * - A release is made only on a tag that isn't there yet: each `gh release create`, and each
+ *   publishing of a draft (`gh release edit --draft=false`), follows a check of it, in the same step
+ *   (a tag anyone who writes can push, and gh, or publishing, would take it).
  * - Every file has a code owner.
  */
 import { execFileSync } from 'node:child_process'
@@ -88,14 +89,17 @@ export function workflowProblems(file, text, checks = false) {
       }
     }
   }
-  // A release made on a tag that's there takes that tag, whatever commit it points at: each
-  // `gh release create` follows a check, in its own step, that the tag doesn't exist yet.
+  // A release made on a tag that's there takes that tag, whatever commit it points at, and so
+  // does a draft when it's published: each `gh release create`, and each `gh release edit` that
+  // publishes, follows a check, in its own step, that the tag doesn't exist yet.
   for (const step of code.split(/^\s*- name:/m)) {
-    const at = step.indexOf('gh release create')
-    if (at >= 0 && !step.slice(0, at).includes('git/ref/tags/v')) {
-      problems.push(
-        `${file}: gh release create should follow a check, in its own step, that the release’s tag doesn’t exist yet (git/ref/tags/v…)`,
-      )
+    for (const made of step.matchAll(/gh release (?:create|edit\b[^\n]*--draft=false)/g)) {
+      if (!step.slice(0, made.index).includes('git/ref/tags/v')) {
+        const what = made[0].startsWith('gh release create') ? 'gh release create' : 'gh release edit --draft=false'
+        problems.push(
+          `${file}: ${what} should follow a check, in its own step, that the release’s tag doesn’t exist yet (git/ref/tags/v…)`,
+        )
+      }
     }
   }
   if (checks) {

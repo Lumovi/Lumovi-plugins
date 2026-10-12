@@ -50,8 +50,9 @@ builds the bundle (`plugins-<version>.json`) and its index (`plugins-<version>.i
 plugin's version, the oldest Lumovi it needs, what it asks for, the SHA-256 of each file), in a job
 that can only read. A second job, which installs nothing, takes exactly what was built, signs it
 with [cosign](https://github.com/sigstore/cosign) through the workflow's own identity (no key is
-kept anywhere), attests that it was built there from that commit, and publishes it with the
-attestation.
+kept anywhere), attests that it was built there from that commit, and attaches it all to a draft
+release. Only once every file is on the draft, as built, is the release published, since a release
+is immutable once published and takes no file after.
 
 To check a release:
 

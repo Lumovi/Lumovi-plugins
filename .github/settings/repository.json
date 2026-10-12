@@ -23,15 +23,5 @@
     }
   },
   "private_vulnerability_reporting": true,
-  "immutable_releases": true,
-  "access": [
-    {
-      "team": "plugin-maintainers",
-      "permission": "maintain"
-    }
-  ],
-  "team": {
-    "name": "plugin-maintainers",
-    "privacy": "closed"
-  }
+  "immutable_releases": true
 }

@@ -7,7 +7,8 @@ name: Checks
 #
 # A pull request's files are a stranger's. Nothing here can reach a secret or write anything:
 # the token can only read, no job asks for more, and none names a secret. A pull request from a
-# fork waits for a maintainer's approval before it runs at all (.github/settings/actions.json).
+# fork waits for approval by someone who can write before it runs at all
+# (.github/settings/actions.json).
 on:
   pull_request:
   push:

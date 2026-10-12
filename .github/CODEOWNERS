@@ -1,4 +1,0 @@
-# A pull request needs a maintainer's approval, never its author's own: main's rules ask for a code
-# owner's review and don't count an approval from whoever pushed last, except that for now the
-# account that writes may merge without it (.github/settings/rulesets/main-reviews.json).
-* @Lumovi/plugin-maintainers

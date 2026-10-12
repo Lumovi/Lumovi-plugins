@@ -92,11 +92,18 @@ for (const { name, files } of plugins) {
 }
 writeFileSync(join(crdsIn, 'sources.json'), `${JSON.stringify(sources, null, 2)}\n`)
 
+// (Said so the spec reads the plugins put here: in Lumovi's own runs it reads the release Lumovi's
+// lock pins, and refuses a plugin left in plugins/.)
 const checker = (more, capture) =>
   spawnSync(
     join(checkout, 'node_modules/.bin/playwright'),
     ['test', '-c', 'playwright.plugins.config.ts', SPEC, ...more],
-    { cwd: checkout, encoding: 'utf8', stdio: capture ? 'pipe' : 'inherit' },
+    {
+      cwd: checkout,
+      encoding: 'utf8',
+      stdio: capture ? 'pipe' : 'inherit',
+      env: { ...process.env, LUMOVI_PLUGINS_UNDER_CHECK: '1' },
+    },
   )
 
 const checked = checker([], false)

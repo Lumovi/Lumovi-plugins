@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { FILES, readPlugins } from './plugins.mjs'
-import { lockProblems, ownerProblems, releaseProblems, workflowProblems } from './rules.mjs'
+import { lockProblems, releaseProblems, workflowProblems } from './rules.mjs'
 
 /** A folder of plugins: each a name, and its files' contents (a file of the name it's given). */
 function folder(plugins) {
@@ -190,12 +190,5 @@ test('the checks run with Lumovi’s own checker, at one commit named whole', ()
     'lumovi.lock.json: repository should be Lumovi/Lumovi, not "someone/Lumovi"',
     'lumovi.lock.json: commit should be a commit’s whole id, 40 hex digits',
     "lumovi.lock.json: ref isn’t something it has",
-  ])
-})
-
-test('every file has a code owner', () => {
-  assert.deepEqual(ownerProblems('# owners\n* @Lumovi/plugin-maintainers\n'), [])
-  assert.deepEqual(ownerProblems('/plugins/ @someone\n'), [
-    '.github/CODEOWNERS: every file needs an owner: a line for *',
   ])
 })

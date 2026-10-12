@@ -33,14 +33,12 @@ On every pull request, with no secret in reach:
   and only the release's publish job may write.
 
 What holds all of it is the repository’s settings (`.github/settings`). A change reaches main only
-through a pull request whose checks have passed. Nothing can be pushed to main directly, rewritten
-or deleted. A tag, once made, is never moved or deleted, and a release is made only for a version
-that has no tag yet. A pull request needs the approval of a maintainer who neither opened it nor
-last pushed to it, except that for now the account that writes the pull requests may merge them
-without it. A release is built and signed by the release workflow from main, once its checks pass,
-with nobody approving the run, so its signature says where and from what it was built, not that a
-second person read it. Nothing here reaches people on its own: a Lumovi release pins one release of
-this repository by its SHA-256, and each Lumovi release is approved by a person before it’s signed.
+with its checks passed, and nothing on main is rewritten or deleted. A tag, once made, is never
+moved or deleted, and a release is made only for a version that has no tag yet. For now, pull
+requests are merged without anyone’s approval, and a release is built and signed by the release
+workflow from main once its checks pass, with nobody approving the run: its signature says where and
+from what it was built, not that anyone read it. Nothing here reaches people on its own: a Lumovi
+release pins one release of this repository by its SHA-256.
 
 ## A release
 

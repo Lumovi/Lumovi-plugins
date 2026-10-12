@@ -12,15 +12,14 @@
  *   publish job asks to write; and the checks, which run on a stranger's pull request, read only
  *   the repository's contents and name no secret. A lint catches what it knows how to spell. What
  *   holds is the repository's settings (.github/settings): the token reads unless a job asks,
- *   actions are pinned, a fork's pull request waits for approval, and a pull request is a code
- *   owner's to approve (but for the one exception in rulesets/main-reviews.json, for now).
+ *   actions are pinned, a fork's pull request waits for approval, and main takes nothing whose
+ *   checks haven't passed.
  * - A release is made only on a tag that isn't there yet: each `gh release create`, and each
  *   publishing of a draft (`gh release edit --draft=false`), follows a check of it, in the same step
  *   (a tag anyone who writes can push, and gh, or publishing, would take it).
- * - Every file has a code owner.
  */
 import { execFileSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const THREE_NUMBERS = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/
@@ -130,17 +129,6 @@ export function lockProblems(lock) {
   return problems
 }
 
-/** What's wrong with CODEOWNERS: every file needs an owner. */
-export function ownerProblems(text) {
-  const lines = text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('#'))
-  return lines.some((line) => /^\*\s+@\S+/.test(line))
-    ? []
-    : ['.github/CODEOWNERS: every file needs an owner: a line for *']
-}
-
 if (import.meta.main) {
   const args = process.argv.slice(2)
   const base = args.includes('--base') ? args[args.indexOf('--base') + 1] : undefined
@@ -160,8 +148,6 @@ if (import.meta.main) {
     const text = readFileSync(join(workflows, file), 'utf8')
     problems.push(...workflowProblems(`${workflows}/${file}`, text, file === 'checks.yml'))
   }
-  const owners = '.github/CODEOWNERS'
-  problems.push(...(existsSync(owners) ? ownerProblems(readFileSync(owners, 'utf8')) : [`${owners}: is missing`]))
   if (problems.length) {
     console.error(`This repository’s rules:\n${problems.map((line) => `  ${line}`).join('\n')}`)
     process.exit(1)

@@ -23,6 +23,7 @@
     }
   },
   "private_vulnerability_reporting": true,
+  "immutable_releases": true,
   "access": [
     {
       "team": "plugin-maintainers",

@@ -12,7 +12,7 @@ organisation runs them; `gh` and `jq`).
 | (owed) | Only a workflow makes a tag: a rule on tags' creation with GitHub Actions as its only bypass. GitHub refuses that bypass on a repository's ruleset (`422: Actor GitHub Actions integration must be part of the ruleset source or owner organization`), so for now anyone who can write may push a tag, and the release workflow refuses a version that's already a tag, in its preflight and again just before it publishes. |
 | `environments/release.json` | The release job runs from main alone. For now it waits for no one: a release goes once its checks pass. Its `reviewers` are that one setting: `[{ "type": "Team", "slug": "plugin-maintainers" }]`, and it waits for a maintainer's approval, never from whoever started the run (`prevent_self_review`). |
 | `actions.json` | Workflows' token can only read unless a job asks for more; actions are GitHub's own and cosign's installer, pinned to commits; a pull request from anyone outside the repository waits for approval before it runs. |
-| `repository.json` | Rebase merges only, secret scanning, private vulnerability reporting, the maintainers' team. |
+| `repository.json` | Rebase merges only, secret scanning, private vulnerability reporting, immutable releases (a release's tag and files never change once it's published; on since 1.0.1, so 1.0.0's aren't held so), the maintainers' team. |
 
 Who: `@Lumovi/plugin-maintainers` are the code owners and the release's reviewers. Pull requests are
 written and merged by an account with write access and nothing more, which isn't in the team: a
@@ -45,6 +45,7 @@ gh api -X PUT "repos/$REPO/collaborators/$WRITER" -f permission=push
 # The repository
 jq .repository repository.json | gh api -X PATCH "repos/$REPO" --input -
 gh api -X PUT "repos/$REPO/private-vulnerability-reporting"
+gh api -X PUT "repos/$REPO/immutable-releases"
 
 # Rules (the writer in its bypass by the account's id)
 writer=$(gh api "users/$WRITER" --jq .id)
@@ -70,5 +71,5 @@ jq .fork_pull_request_contributor_approval actions.json |
 ```
 
 To check them later, read each back (`gh api repos/$REPO/rulesets`, `…/environments/release`,
-`…/actions/permissions`) and compare with these files. main-reviews' bypass must read back as the
-writer's numeric id with `pull_request`, and nothing else.
+`…/immutable-releases`, `…/actions/permissions`) and compare with these files. main-reviews' bypass
+must read back as the writer's numeric id with `pull_request`, and nothing else.

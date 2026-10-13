@@ -9,6 +9,7 @@
     "samples": "node scripts/code.mjs lumovi --write",
     "crds": "node scripts/crds.mjs lumovi",
     "bundle": "node scripts/bundle.mjs lumovi dist",
+    "folder": "node scripts/folder.mjs lumovi",
     "rules": "node scripts/rules.mjs",
     "types": "node scripts/types.mjs lumovi",
     "test": "node --test \"scripts/*.test.mjs\"",

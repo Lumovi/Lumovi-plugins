@@ -1,0 +1,88 @@
+[
+  {
+    "part": "Table",
+    "props": {
+      "title": "Pods",
+      "columns": [
+        {
+          "name": "Namespace",
+          "kind": "text"
+        },
+        {
+          "name": "Phase",
+          "kind": "text"
+        },
+        {
+          "name": "Restarts",
+          "kind": "text"
+        }
+      ],
+      "headings": true,
+      "rows": [
+        {
+          "key": "t1",
+          "lead": {
+            "name": "api-7c9d4"
+          },
+          "cells": [
+            {
+              "kind": "text",
+              "text": "shop"
+            },
+            {
+              "kind": "text",
+              "text": "Running"
+            },
+            {
+              "kind": "text",
+              "text": "0"
+            }
+          ],
+          "opens": "t1"
+        },
+        {
+          "key": "t2",
+          "lead": {
+            "name": "web-5f2b8"
+          },
+          "cells": [
+            {
+              "kind": "text",
+              "text": "shop"
+            },
+            {
+              "kind": "text",
+              "text": "Running"
+            },
+            {
+              "kind": "text",
+              "text": "5"
+            }
+          ],
+          "opens": "t2"
+        },
+        {
+          "key": "t3",
+          "lead": {
+            "name": "reports-1"
+          },
+          "cells": [
+            {
+              "kind": "text",
+              "text": "data"
+            },
+            {
+              "kind": "text",
+              "text": "Pending"
+            },
+            {
+              "kind": "none"
+            }
+          ],
+          "opens": "t3"
+        }
+      ]
+    },
+    "children": []
+  }
+]

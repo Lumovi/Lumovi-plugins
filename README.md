@@ -21,6 +21,9 @@ with Lumovi's runtime for a page (`src/runtime`), with a sample to run it on. A 
 code from its source and carries it in the bundle; Lumovi runs it in a sealed box, where it reads
 only what its file says, as you, and changes nothing in your cluster.
 
+A plugin of your own with code, run by Lumovi's desktop app in Developer mode, starts from
+[`template/`](template/README.md).
+
 ## How a plugin is checked
 
 On every pull request, with no secret in reach:

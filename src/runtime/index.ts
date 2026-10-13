@@ -49,13 +49,47 @@ export type Opened =
 export interface Handed {
   token: string
   object: Readonly<Record<string, unknown>>
+  /** Its live usage, where the read asked for it and the cluster measures it: cores and bytes. */
+  usage?: { readonly cpu: number; readonly memory: number }
   secrets?: readonly { path: string; tokens: readonly string[] }[]
+}
+
+/**
+ * Why a read that asked for usage has none for any object: nothing measures it in this cluster,
+ * or whoever is using Lumovi may read the objects and not their usage.
+ */
+export type NoUsage = 'unmeasured' | 'not-allowed'
+
+/** How a list or an object is read: with each object's live usage too (its file must say so). */
+export interface Reading {
+  usage?: true
+}
+
+/**
+ * How a list is read: only the objects whose `fields` have these values (`{ 'spec.nodeName': ''
+ * }`: pods on no node yet) and that have these `labels` (`key`, `key=value`). The cluster picks
+ * them, by fields it picks a kind by and its file grants.
+ */
+export interface ListReading extends Reading {
+  fields?: Readonly<Record<string, string>>
+  labels?: readonly string[]
+}
+
+/** What Lumovi said of an answer, beside its objects. */
+export interface Answered {
+  /** Where usage was asked for and no object has any: why. */
+  noUsage?: NoUsage
+  /**
+   * A list past Lumovi's limit: these are its first, and this is the door's token for how it was
+   * cut. A Table or a tile drawn from them names it as their `cut`, and Lumovi says the numbers.
+   */
+  cut?: string
 }
 
 /** A read the plugin asked for, going until it's stopped or ended. */
 export interface Read {
-  /** Each answer: every object the read holds now. */
-  answered(hear: (objects: readonly Handed[]) => void): Read
+  /** Each answer: every object the read holds now, and what Lumovi said of it. */
+  answered(hear: (objects: readonly Handed[], said: Answered) => void): Read
   /** The read ended: why, as a code, and Lumovi's words. Nothing more comes of it. */
   ended(hear: (refused: string, said: string) => void): Read
   /** It's failing for now (it had answers): Lumovi tries again. */
@@ -64,21 +98,48 @@ export interface Read {
   stop(): void
 }
 
+/** Where a field's value goes in a proposed change: `field('revision')` in place of a value. */
+export const field = (key: string): { field: string } => ({ field: key })
+
+/** A field the person sets in Lumovi's dialog, above the change: its kind, its words, where it starts. */
+export type Field =
+  | { kind: 'text'; key: string; label: string; hint?: string; most?: number; required?: boolean; value?: string }
+  | { kind: 'number'; key: string; label: string; hint?: string; min: number; max: number; value?: number }
+  | { kind: 'choice'; key: string; label: string; hint?: string; options: { label: string; value: unknown }[]; value?: number }
+  | { kind: 'switch'; key: string; label: string; hint?: string; value?: boolean }
+
+/**
+ * A change a page proposes, of one of its plugin's own kinds its file says it changes: to an
+ * object a read brought (its token), or a new one of a kind, in the namespace of an object it holds.
+ */
+export type ProposedChange =
+  | { action: 'patch'; target: string; patch: object }
+  | { action: 'delete'; target: string }
+  | { action: 'scale'; target: string; replicas: number | { field: string } }
+  | { action: 'create'; kind: string; in?: string; object: object }
+
+/** What became of a proposal, as Lumovi tells the page: never what was typed. */
+export type ProposalOutcome = 'applied' | 'cancelled' | 'refused' | 'failed'
+
 export interface Page {
   /** What Lumovi said first. */
   readonly opened: Opened
   /** Draws the page as it's described: only what changed since the last drawing is sent. */
   draw(page: Described | readonly Described[]): void
   /** Reads a kind's objects (`'karpenter.sh/NodePool'`, `'/Node'`), in a namespace or all. */
-  list(kind: string, namespace?: string): Read
+  list(kind: string, namespace?: string, reading?: ListReading): Read
   /** Reads one object. */
-  object(kind: string, namespace: string | undefined, name: string): Read
+  object(kind: string, namespace: string | undefined, name: string, reading?: Reading): Read
   /** Reads the events of an object a read brought, by its token. */
   events(token: string): Read
-  /** Reads the usage of an object a read brought, by its token. */
-  usage(token: string): Read
   /** Asks every list read again now (a person's "refresh"). */
   refresh(): void
+  /**
+   * Proposes a change, from a handler of a press: Lumovi shows it in its own dialog, with the
+   * fields asked for, and makes it only once the person confirms. What became of it, once it has.
+   * (Outside a press's handler, or a second time for one press, it's refused.)
+   */
+  propose(change: ProposedChange, said?: { verb?: string; fields?: readonly Field[] }): Promise<ProposalOutcome>
 }
 
 /**
@@ -136,6 +197,26 @@ function run(box: Box, start: (page: Page) => void): void {
     }
   }
   const ask = (said: object) => box.post(JSON.stringify(said))
+  // The latest press's token, as Lumovi sent it with the press: what a proposal follows. (Spent by
+  // the first proposal after it.)
+  let press: string | undefined
+  let nextProposal = 1
+  const proposals = new Map<number, (outcome: ProposalOutcome) => void>()
+  const propose: Page['propose'] = (change, said = {}) => {
+    const id = nextProposal++
+    const following = press
+    press = undefined
+    return new Promise((resolve) => {
+      proposals.set(id, resolve)
+      ask({
+        propose: id,
+        ...(following === undefined ? {} : { press: following }),
+        change,
+        ...(said.verb === undefined ? {} : { verb: said.verb }),
+        ...(said.fields === undefined ? {} : { fields: said.fields }),
+      })
+    })
+  }
 
   /**
    * A part's properties as the door is sent them: each function, wherever it is in them (a
@@ -306,26 +387,39 @@ function run(box: Box, start: (page: Page) => void): void {
       page = {
         opened,
         draw,
-        list: (kind, namespace) =>
-          read({ what: 'list', kind, ...(namespace === undefined ? {} : { namespace }) }),
-        object: (kind, namespace, name) =>
-          read({ what: 'object', kind, ...(namespace === undefined ? {} : { namespace }), name }),
+        list: (kind, namespace, reading) =>
+          read({ what: 'list', kind, ...within(namespace), ...asked(reading), ...picked(reading) }),
+        object: (kind, namespace, name, reading) =>
+          read({ what: 'object', kind, ...within(namespace), name, ...asked(reading) }),
         events: (token) => read({ what: 'events', of: token }),
-        usage: (token) => read({ what: 'usage', of: token }),
         refresh: () => ask({ refresh: true }),
+        propose,
       }
       start(page)
       return
     }
     if (typeof said.call === 'string') {
+      press = typeof said.press === 'string' ? said.press : undefined
       handlers.get(said.call)?.(said.carries)
+      return
+    }
+    if (typeof said.proposed === 'number') {
+      const settle = proposals.get(said.proposed)
+      proposals.delete(said.proposed)
+      const outcome = said.outcome
+      settle?.(outcome === 'applied' || outcome === 'cancelled' || outcome === 'failed' ? outcome : 'refused')
       return
     }
     if (typeof said.read === 'number') {
       const hearing = reads.get(said.read)
       if (!hearing) return
       if (Array.isArray(said.objects)) {
-        for (const hear of hearing.answered) hear(said.objects as Handed[])
+        const none = said.noUsage === 'unmeasured' || said.noUsage === 'not-allowed' ? said.noUsage : undefined
+        const about: Answered = {
+          ...(none ? { noUsage: none } : {}),
+          ...(typeof said.cut === 'string' ? { cut: said.cut } : {}),
+        }
+        for (const hear of hearing.answered) hear(said.objects as Handed[], about)
       } else if (typeof said.ended === 'string') {
         reads.delete(said.read)
         for (const hear of hearing.ended) hear(said.ended, String(said.said ?? ''))
@@ -336,8 +430,18 @@ function run(box: Box, start: (page: Page) => void): void {
   })
 }
 
+/** A namespace, as an ask says one (or doesn't). */
+const within = (namespace: string | undefined) => (namespace === undefined ? {} : { namespace })
+/** Usage, as an ask says it's asked for (or doesn't). */
+const asked = (reading: Reading | undefined) => (reading?.usage ? { usage: true } : {})
+/** How a list is picked, as an ask says it (only what's said). */
+const picked = (reading: ListReading | undefined) => ({
+  ...(reading?.fields ? { fields: reading.fields } : {}),
+  ...(reading?.labels ? { labels: reading.labels } : {}),
+})
+
 interface Hearing {
-  answered: ((objects: readonly Handed[]) => void)[]
+  answered: ((objects: readonly Handed[], said: Answered) => void)[]
   ended: ((refused: string, said: string) => void)[]
   failing: ((refused: string, said: string) => void)[]
 }

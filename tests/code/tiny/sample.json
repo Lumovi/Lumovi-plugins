@@ -1,16 +1,56 @@
 {
-  "opens": { "page": "overview" },
+  "opens": {
+    "page": "overview"
+  },
   "objects": {
     "/Pod": [
       {
-        "metadata": { "name": "api", "namespace": "shop", "labels": { "app": "api" } },
-        "spec": { "nodeName": "node-1", "containers": [{ "name": "api", "image": "shop/api:1" }] },
-        "status": { "phase": "Running" }
+        "metadata": {
+          "name": "api",
+          "namespace": "shop",
+          "labels": {
+            "app": "api"
+          }
+        },
+        "spec": {
+          "nodeName": "node-1",
+          "containers": [
+            {
+              "name": "api",
+              "image": "shop/api:1"
+            }
+          ]
+        },
+        "status": {
+          "phase": "Running"
+        }
       },
       {
-        "metadata": { "name": "web", "namespace": "shop" },
-        "spec": { "containers": [{ "name": "web", "image": "shop/web:1" }] },
-        "status": { "phase": "Pending" }
+        "metadata": {
+          "name": "web",
+          "namespace": "shop"
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "web",
+              "image": "shop/web:1"
+            }
+          ]
+        },
+        "status": {
+          "phase": "Pending"
+        }
+      }
+    ]
+  },
+  "usage": {
+    "/Pod": [
+      {
+        "namespace": "shop",
+        "name": "api",
+        "cpu": 0.25,
+        "memory": 134217728
       }
     ]
   }

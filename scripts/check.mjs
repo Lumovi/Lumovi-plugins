@@ -14,9 +14,10 @@
 import { execFileSync, spawnSync } from 'node:child_process'
 import { appendFileSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { allowlistChanges, asksChanges, changesSummary } from './changes.mjs'
-import { checkoutAt, LOCK, lumoviReader } from './lumovi.mjs'
+import { allowlistChanges, asksChanges, changesSummary, proposalsChanges, spellWith } from './changes.mjs'
+import { checkoutAt, LOCK, lumoviDoor, lumoviReader } from './lumovi.mjs'
 import { BUNDLED, readPlugins, refuse } from './plugins.mjs'
+import { needsProblems } from './samples.mjs'
 
 /** The checker's spec: the one that reads plugins/ and the CRDs beside it. */
 const SPEC = 'tests/plugins/plugins.spec.ts'
@@ -32,6 +33,8 @@ const { plugins, problems } = readPlugins()
 refuse(problems, 'The plugins’ folders')
 
 const lumovi = lumoviReader(checkout)
+// (A summary marks what Lumovi's pages mark, spelled as Lumovi spells it.)
+spellWith(lumovi.spelled)
 const read = plugins.map(({ name, files }) => ({
   name,
   files,
@@ -75,6 +78,19 @@ if (base) {
   for (const name of listedAt.split('\n').filter(Boolean)) {
     if (!read.some((plugin) => plugin.name === name)) lines.push(...asksChanges(name, asked(parsedAt(name))))
   }
+  // What each plugin's page proposes, as its sample's run keeps it: a change it asks to make.
+  const proposedAt = (read) => {
+    try {
+      return read && JSON.parse(read.toString('utf8'))
+    } catch {
+      return undefined
+    }
+  }
+  const sources = existsSync('src') ? readdirSync('src').filter((name) => existsSync(join('src', name, 'sample.json'))) : []
+  for (const name of sources) {
+    const path = join('src', name, 'sample.proposals.json')
+    lines.push(...proposalsChanges(name, proposedAt(at(path)), proposedAt(existsSync(path) ? readFileSync(path) : undefined)))
+  }
   const allowed = at('allowlist.json')
   lines.push(
     ...allowlistChanges(allowed && JSON.parse(allowed.toString('utf8')), JSON.parse(readFileSync('allowlist.json', 'utf8'))),
@@ -101,6 +117,25 @@ if (base) {
   }
   refuse(unversioned, `Against ${base}`)
 }
+
+// The Lumovi each file needs carries all the file says, with code or without: a view's
+// `manages` is a file's, say. (What a page's code reads and names is the sample run's to add.)
+let since
+try {
+  since = lumoviDoor(checkout).PLUGIN_SINCE
+} catch (error) {
+  // (Said with the build's own first line: a door that's there and fails to build isn't "no door".)
+  const why = String(error?.message ?? error).split('\n')[0]
+  refuse([`the pinned Lumovi’s door, which says what each release carries, didn’t build: ${why}. Pin a Lumovi that has one (lumovi.lock.json)`], 'What their files need')
+}
+const { version } = JSON.parse(readFileSync(join(checkout, 'package.json'), 'utf8'))
+const nothing = { read: [], parts: [], kinds: [], props: [] }
+refuse(
+  read.flatMap(({ name, plugin }) =>
+    needsProblems({ plugin, used: nothing, since, version }).map((line) => `plugins/${name}: ${line}`),
+  ),
+  'What their files need',
+)
 
 // In the checkout, the repository's plugins and CRDs in place of Lumovi's own copies.
 const pluginsIn = join(checkout, 'plugins')

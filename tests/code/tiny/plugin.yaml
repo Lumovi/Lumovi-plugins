@@ -9,4 +9,4 @@ spec:
   kinds: [{ group: tiny.example.com, kind: Toy }]
   pages: [{ id: overview, title: Overview }]
   reads:
-    - { group: '', kind: Pod, fields: [metadata.name, metadata.namespace, spec.nodeName] }
+    - { group: '', kind: Pod, fields: [metadata.name, metadata.namespace, spec.nodeName], usage: true }

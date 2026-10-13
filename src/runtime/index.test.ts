@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { checkoutAt, lumoviDoor } from '../../scripts/lumovi.mjs'
-import { h, plugin, type Box, type Handed, type Opened, type Page } from './index.ts'
+import { field, h, plugin, type Box, type Handed, type Opened, type Page } from './index.ts'
 
 const lumovi = lumoviDoor(checkoutAt(process.env.LUMOVI_CHECKOUT))
 const { handler, list, oneOf, record, text } = lumovi.declare
@@ -44,10 +44,16 @@ async function opened(opening: Opened = { page: 'overview' }) {
   const counted = new lumovi.PageReads({ lists: 0, kept: 0 }, () => 0)
   const commits: unknown[][][] = []
   const asks: object[] = []
+  const proposed: object[] = []
   let heard: ((data: unknown) => void) | undefined
   const box: Box = {
     post(sent) {
       const said = JSON.parse(sent)
+      // (A proposal is Lumovi's dialog's to show: here it's kept as it was sent.)
+      if (Object.hasOwn(said, 'propose')) {
+        proposed.push(said)
+        return
+      }
       if (Object.hasOwn(said, 'commit')) {
         const taken = door.take(sent)
         assert.ok(!('why' in taken), `the door stopped it: ${taken.what}`)
@@ -70,7 +76,7 @@ async function opened(opening: Opened = { page: 'overview' }) {
     heard!(typeof message === 'string' ? message : JSON.stringify(message))
   hear({ open: opening })
   assert.equal(started.length, 1)
-  return { page: started[0]!, door, commits, asks, hear }
+  return { page: started[0]!, door, commits, asks, proposed, hear }
 }
 
 /** The door's page as plain data: a part as its name, properties and what it holds; a text as itself. */
@@ -214,36 +220,64 @@ test('each ask is one Lumovi reads, under a new number, and each answer goes to 
     .failing((refused, said) => heard.push(['failing', refused, said]))
     .ended((refused, said) => heard.push(['ended', refused, said]))
   page.events('tok-1')
-  page.usage('tok-1')
-  page.list('/Pod', 'kube-system')
+  const nodes = page
+    .list('/Node', undefined, { usage: true })
+    .answered((objects, said) => heard.push(['nodes', objects, said]))
+  page.object('/Pod', 'kube-system', 'dns-1', { usage: true })
+  // A list the cluster picks: pods on no node yet, with a label.
+  page
+    .list('/Pod', 'shop', { fields: { 'spec.nodeName': '' }, labels: ['app'] })
+    .answered((objects, said) => heard.push(['waiting', objects, said]))
   assert.deepEqual(asks, [
     { read: 1, what: 'list', kind: 'karpenter.sh/NodePool' },
     { read: 2, what: 'object', kind: '/Node', name: 'node-1' },
     { read: 3, what: 'events', of: 'tok-1' },
-    { read: 4, what: 'usage', of: 'tok-1' },
-    { read: 5, what: 'list', kind: '/Pod', namespace: 'kube-system' },
+    { read: 4, what: 'list', kind: '/Node', usage: true },
+    { read: 5, what: 'object', kind: '/Pod', namespace: 'kube-system', name: 'dns-1', usage: true },
+    {
+      read: 6,
+      what: 'list',
+      kind: '/Pod',
+      namespace: 'shop',
+      fields: { 'spec.nodeName': '' },
+      labels: ['app'],
+    },
   ])
   const found: Handed[] = [{ token: 'tok-2', object: { metadata: { name: 'default' } } }]
   hear({ read: 1, objects: found })
   hear({ read: 2, failing: 'failed', said: 'Lumovi couldn’t read it this time.' })
   hear({ read: 2, ended: 'not-found', said: 'It isn’t there.' })
   hear({ read: 2, objects: found })
+  // Each object with its usage, as handed; or none, and why.
+  const used: Handed[] = [{ ...found[0]!, usage: { cpu: 1.5, memory: 2_147_483_648 } }]
+  hear({ read: 4, objects: used })
+  hear({ read: 4, objects: found, noUsage: 'not-allowed' })
+  hear({ read: 4, objects: found, noUsage: 'made-up' })
+  // A list past Lumovi's limit: its first, and the door's token for how it was cut.
+  hear({ read: 6, objects: found, cut: 'cut-1' })
+  hear({ read: 6, objects: found, cut: 7 })
   assert.deepEqual(heard, [
     ['pools', found],
     ['failing', 'failed', 'Lumovi couldn’t read it this time.'],
     ['ended', 'not-found', 'It isn’t there.'],
+    ['nodes', used, {}],
+    ['nodes', found, { noUsage: 'not-allowed' }],
+    ['nodes', found, {}],
+    ['waiting', found, { cut: 'cut-1' }],
+    ['waiting', found, {}],
   ])
+  nodes.stop()
   node.stop()
   pools.stop()
   pools.stop()
   page.refresh()
   assert.deepEqual(
-    asks.slice(5),
-    [{ stop: 1 }, { refresh: true }],
+    asks.slice(6),
+    [{ stop: 4 }, { stop: 1 }, { refresh: true }],
     'an ended read, or a stopped one, is stopped no more',
   )
   hear({ read: 1, objects: found })
-  assert.equal(heard.length, 3)
+  assert.equal(heard.length, 8)
 })
 
 test('what Lumovi says first starts the page once; what isn’t a message is nothing', async () => {
@@ -257,6 +291,52 @@ test('what Lumovi says first starts the page once; what isn’t a message is not
   hear({ read: 7, objects: [] })
   assert.deepEqual(page.opened, { tab: 'pool', object })
   assert.deepEqual([commits, asks], [[], []])
+})
+
+test('a proposal goes with the press it follows, once; and what Lumovi says became of it is its answer', async () => {
+  const { page, hear, commits, proposed } = await opened()
+  const outcomes: string[] = []
+  page.draw(
+    h(
+      'Button',
+      {
+        press: () => {
+          void page.propose({ action: 'delete', target: 'tok-1' }).then((said) => outcomes.push(said))
+          // (A second, on the same press: sent with no press, which Lumovi refuses.)
+          void page
+            .propose({ action: 'patch', target: 'tok-1', patch: { spec: { size: field('size') } } }, {
+              verb: 'Resize',
+              fields: [{ kind: 'number', key: 'size', label: 'Size', min: 1, max: 10, value: 3 }],
+            })
+            .then((said) => outcomes.push(`second ${said}`))
+        },
+      },
+      'Delete',
+    ),
+  )
+  const handle = (commits[0]![0]![3] as { press: string }).press
+  hear({ call: handle, carries: {}, press: 'p-1' })
+  assert.deepEqual(proposed, [
+    { propose: 1, press: 'p-1', change: { action: 'delete', target: 'tok-1' } },
+    {
+      propose: 2,
+      change: { action: 'patch', target: 'tok-1', patch: { spec: { size: { field: 'size' } } } },
+      verb: 'Resize',
+      fields: [{ kind: 'number', key: 'size', label: 'Size', min: 1, max: 10, value: 3 }],
+    },
+  ])
+  hear({ proposed: 2, outcome: 'refused' })
+  hear({ proposed: 1, outcome: 'applied' })
+  // Answered once; and an answer that isn't one of Lumovi's words is a refusal.
+  hear({ proposed: 1, outcome: 'cancelled' })
+  await new Promise((done) => setImmediate(done))
+  assert.deepEqual(outcomes, ['second refused', 'applied'])
+  // A call with no press's token (a pick, say) leaves nothing for a proposal to follow.
+  hear({ call: handle, carries: {} })
+  assert.deepEqual(proposed[2], { propose: 3, change: { action: 'delete', target: 'tok-1' } })
+  hear({ proposed: 3, outcome: 'made-up' })
+  await new Promise((done) => setImmediate(done))
+  assert.equal(outcomes.at(-1), 'refused')
 })
 
 test('the door still checks every word: what a part doesn’t take stops the page where it’s sent', async () => {

@@ -136,13 +136,14 @@ const LINE_AT_MOST = 200
 
 /**
  * What's wrong with what src/ keeps (`files`: each committed file's path and text): a plugin's
- * TypeScript and its sample, and the runtime's TypeScript; nothing built, nothing minified. What
+ * TypeScript and its sample (with the page and the proposals the checks wrote of it), and the
+ * runtime's TypeScript; nothing built, nothing minified. What
  * a release carries is built by its workflow from these, never taken from a pull request.
  */
 export function srcProblems(files) {
   return files.flatMap(({ path, text }) => {
     if (!/^src\/[a-z][a-z0-9-]*\/(?:[^/]+\/)*[^/]+\.ts$/.test(path)) {
-      return /^src\/[a-z][a-z0-9-]*\/sample(?:\.page)?\.json$/.test(path)
+      return /^src\/[a-z][a-z0-9-]*\/sample(?:\.page|\.proposals)?\.json$/.test(path)
         ? []
         : [
             `${path}: src/ keeps TypeScript and a plugin’s sample, and nothing built: what a release carries is built by its workflow`,

@@ -21,7 +21,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { checkoutAt, esbuildOf, LOCK, lumoviDoor, lumoviReader } from './lumovi.mjs'
+import { checkoutAt, esbuildOf, LOCK, lumoviChanges, lumoviDoor, lumoviReader } from './lumovi.mjs'
 import { readPlugins, refuse } from './plugins.mjs'
 import { sampleProblems } from './samples.mjs'
 
@@ -234,10 +234,15 @@ export function builtCode(checkout, root = '.') {
 export async function checkedCode(checkout, root = '.', write = false) {
   const built = builtCode(checkout, root)
   const door = lumoviDoor(checkout)
+  // (Lumovi's changes through the door: built once, and only for a sample that presses something.)
+  let changesBuilt
+  const changes = () => (changesBuilt ??= lumoviChanges(checkout))
+  // (The pinned Lumovi's version: what its door has that no release carried yet comes after it.)
+  const { version } = JSON.parse(readFileSync(join(checkout, 'package.json'), 'utf8'))
   const wrong = []
   for (const [name, { text, plugin }] of Object.entries(built)) {
     const folder = join(root, SOURCE, name)
-    wrong.push(...(await sampleProblems({ door, plugin, code: text, folder, write })))
+    wrong.push(...(await sampleProblems({ door, changes, plugin, code: text, folder, write, version })))
   }
   refuse(wrong, 'The plugins’ code, on their samples')
   return Object.fromEntries(Object.entries(built).map(([name, { text }]) => [name, text]))

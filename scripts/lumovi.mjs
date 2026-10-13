@@ -57,9 +57,21 @@ export function lumoviDoor(checkout) {
     "export { DoorPage, DOOR_LIMITS, ROOT } from './src/shared/plugin-door.ts'",
     "export { DECLARED } from './src/shared/kit/parts.ts'",
     "export * as declare from './src/shared/kit/declare.ts'",
-    "export { granted, handedWhole, kindAsked, PageReads, picked, READ_LIMITS, READ_REFUSED, readAsk, resolvedAs } from './src/shared/plugin-reads.ts'",
-    "export { callOf, Tokens } from './src/shared/plugin-presses.ts'",
+    "export { granted, handedWhole, kindAsked, PageReads, picked, pickedRefusal, READ_LIMITS, READ_REFUSED, readAsk, resolvedAs } from './src/shared/plugin-reads.ts'",
+    "export { callOf, swapFor, Tokens } from './src/shared/plugin-presses.ts'",
     "export { ownKinds } from './src/shared/plugins.ts'",
+    "export { PLUGIN_SINCE } from './src/shared/plugin-since.ts'",
+  ])
+}
+
+/**
+ * Lumovi's own changes through the door, from the checkout: how a page's proposal is read, what a
+ * plugin may propose, and the change as the person's values fill it in. Built only where a sample
+ * presses something: a pinned Lumovi without them can still run every other sample.
+ */
+export function lumoviChanges(checkout) {
+  return lumoviCode(checkout, [
+    "export { filled, mayPropose, proposalProblem, sentProblem, startingValues } from './src/shared/plugin-changes.ts'",
   ])
 }
 
@@ -68,6 +80,7 @@ export function lumoviReader(checkout) {
   const lumovi = lumoviCode(checkout, [
     "export { parsePlugin } from './src/shared/plugins.ts'",
     "export { asks } from './src/shared/plugin-asks.ts'",
+    "export { spelled } from './src/shared/kit/characters.ts'",
   ])
   // Lumovi's own views of Kubernetes' kinds (the file that stays in Lumovi): no plugin's to show.
   const own = join(checkout, 'src/renderer/src/views')
@@ -86,5 +99,7 @@ export function lumoviReader(checkout) {
      */
     parse: (text, file) => lumovi.parsePlugin(text, file, { lumovisOwn, carriesCode: true }),
     asks: lumovi.asks,
+    /** A text with each character Lumovi marks spelled as its code point, as Lumovi spells it. */
+    spelled: lumovi.spelled,
   }
 }

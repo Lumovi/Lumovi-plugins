@@ -4,9 +4,9 @@ kind: Plugin
 metadata:
   name: karpenter
 spec:
-  version: 1.0.0
+  version: 1.1.0
   needs:
-    lumovi: 1.22.0
+    lumovi: 1.23.0
   groups:
     - karpenter.sh
     - karpenter.k8s.aws
@@ -18,6 +18,20 @@ spec:
     - { group: karpenter.sh, kind: NodeClaim }
     - { group: karpenter.k8s.aws, kind: EC2NodeClass }
     - { group: karpenter.azure.com, kind: AKSNodeClass }
+  # Its overview (src/karpenter): its node pools against their limits, its nodes, what's launching,
+  # what's being replaced, and the pods waiting for a node.
+  pages:
+    - { id: overview, title: Overview }
+  reads:
+    - group: ''
+      kind: Node
+      fields: [metadata.name, metadata.labels, spec.taints, status.allocatable, status.conditions]
+      usage: true
+    # (spec.nodeName: it reads only the pods on no node yet, which the cluster picks by it.)
+    - group: ''
+      kind: Pod
+      fields:
+        [metadata.name, metadata.namespace, metadata.creationTimestamp, spec.nodeName, status.conditions]
   views:
     - name: karpenter-node-pools
       kinds:

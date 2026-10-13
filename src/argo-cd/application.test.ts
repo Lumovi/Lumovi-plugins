@@ -22,7 +22,7 @@ import {
   targetRevision,
   type Object_,
 } from './application.ts'
-import { overview, propose, tab, tabEnded } from './pages.ts'
+import { OPENS, overview, propose, tab, tabEnded } from './pages.ts'
 
 const sample = JSON.parse(readFileSync(new URL('./sample.json', import.meta.url), 'utf8')) as {
   objects: Record<string, Object_[]>
@@ -81,11 +81,11 @@ test('what deleting it deletes, a revision shortened, and where it’s from', ()
   assert.equal(shortRevision('main'), 'main')
   assert.equal(shortRevision('a'.repeat(64)), 'aaaaaaa')
   // Several sources: the first, and how many more; its revision the first's.
-  assert.equal(source(named('monitoring')), 'prometheus-community.github.io/helm-charts · kube-prometheus-stack and 1 more')
+  assert.equal(source(named('monitoring')), 'kube-prometheus-stack · prometheus-community.github.io/helm-charts and 1 more')
   assert.equal(targetRevision(named('monitoring')), '61.3.0')
   assert.equal(severalSources(named('monitoring')), true)
   assert.equal(severalSources(named('storefront')), false)
-  assert.equal(source(named('legacy-batch')), 'github.com/acme/deploy · jobs/legacy-batch')
+  assert.equal(source(named('legacy-batch')), 'jobs/legacy-batch · github.com/acme/deploy')
   assert.equal(restByHealth(apps), '1 degraded · 1 progressing')
 })
 
@@ -151,13 +151,21 @@ test('the tab’s header has its three buttons, its health and its reason; a pre
     ['last-synced', 'Succeeded, by auto-sync'],
     ['auto-sync', 'Prune off · self-heal on'],
   ])
+  // With no resources yet, the sync tile says so, with no level; never synced, the last sync's value says so.
+  const none = find(tab(named('payments'), () => {}), 'tiles')!.props.tiles as { key: string; detail?: string; level?: string; value?: unknown }[]
+  assert.deepEqual([none[0]!.detail, none[0]!.level], ['No resources yet', undefined])
+  assert.deepEqual([none[2]!.value, none[2]!.detail], [{ kind: 'words', text: 'Never' }, undefined])
 })
 
-test('Sync is neither drawn nor proposed while a sync runs; with several sources it sets no revision', () => {
+test('Sync is off and not proposed while a sync runs; with several sources it sets no revision', () => {
   const buttons = (name: string) =>
-    ((find(tab(named(name), () => {}), 'header')!.props.buttons as { key: string }[]).map(({ key }) => key))
-  assert.deepEqual(buttons('payments'), ['delete', 'refresh'])
-  assert.deepEqual(buttons('storefront'), ['delete', 'refresh', 'sync'])
+    (find(tab(named(name), () => {}), 'header')!.props.buttons as { key: string; off?: string; note?: string }[]).map(
+      ({ key, off, note }) => [key, off ?? note ?? ''],
+    )
+  // Delete says what else it deletes where Argo CD's finalizer would; Sync is off while one runs.
+  const finalizer = 'Deleting it also deletes what it deployed (it has Argo CD’s resources finalizer).'
+  assert.deepEqual(buttons('payments'), [['delete', ''], ['refresh', ''], ['sync', 'A sync is running.']])
+  assert.deepEqual(buttons('storefront'), [['delete', finalizer], ['refresh', ''], ['sync', '']])
   const proposed: { change: unknown; said: unknown }[] = []
   const page = { propose: (change: unknown, said: unknown) => (proposed.push({ change, said }), Promise.resolve('applied')) }
   propose(page as never, 'sync', 't-payments', named('payments'))
@@ -174,5 +182,58 @@ test('Sync is neither drawn nor proposed while a sync runs; with several sources
     hint: 'A branch, a tag or a commit. Empty syncs to what the application tracks.',
     most: 256,
     value: 'main',
+  })
+})
+
+test('a resource’s row goes to Lumovi’s list of its kind, at it, where the file opens that kind and it isn’t missing', () => {
+  const rows = (object: Object_) =>
+    (find(tab(object, () => {}), 'resources')!.children![0] as Drawn).props.rows as { key: string; lead: { name: string }; goes?: unknown }[]
+  assert.deepEqual(
+    rows(named('storefront')).map(({ lead, goes }) => [lead.name, goes]),
+    // (Worst first: the two that are healthy, then the ConfigMap, which has no health at all.)
+    [
+      ['storefront', { list: 'apps/Deployment', name: 'storefront', namespace: 'shop' }],
+      ['storefront', { list: '/Service', name: 'storefront', namespace: 'shop' }],
+      ['storefront-config', { list: '/ConfigMap', name: 'storefront-config', namespace: 'shop' }],
+    ],
+  )
+  // Missing from the cluster, of a kind its file doesn't open, or with no namespace: nowhere.
+  const resource = (group: string, kind: string, name: string, more: object) => ({ group, kind, name, status: 'OutOfSync', ...more })
+  const odd = {
+    metadata: { name: 'odd', namespace: 'argocd' },
+    status: {
+      resources: [
+        resource('apps', 'Deployment', 'gone', { namespace: 'shop', health: { status: 'Missing' } }),
+        resource('rbac.authorization.k8s.io', 'Role', 'reader', { namespace: 'shop' }),
+        resource('apps', 'Deployment', 'nowhere', {}),
+      ],
+    },
+  }
+  assert.deepEqual(rows(odd).map(({ lead, goes }) => [lead.name, goes]), [
+    ['gone', undefined],
+    ['nowhere', undefined],
+    ['reader', undefined],
+  ])
+})
+
+test('the kinds a row goes to are the ones its file says its pages open, no more and no fewer', () => {
+  const file = readFileSync(new URL('../../plugins/argo-cd/plugin.yaml', import.meta.url), 'utf8')
+  // (Its file's `opens`, as it writes each: `- { group: apps, kind: Deployment }`.)
+  const block = /^  opens:\n((?:    - .*\n)+)/m.exec(file)?.[1] ?? ''
+  const said = [...block.matchAll(/group: "?([^",}]*)"?, kind: (\w+)/g)].map(([, group, kind]) => `${group}/${kind}`)
+  assert.equal(said.length, 8)
+  assert.deepEqual([...said].sort(), [...OPENS].sort())
+})
+
+test('history is headed by ID, each revision its first seven characters in fixed-width type, the whole in its tooltip', () => {
+  const table = find(tab(named('storefront'), () => {}), 'history')!.children![0] as Drawn
+  assert.equal(table.props.leadHeading, 'ID')
+  const rows = table.props.rows as { lead: { name: string }; cells: unknown[] }[]
+  assert.deepEqual(rows[0]!.lead.name, '12')
+  assert.deepEqual(rows[0]!.cells[0], {
+    kind: 'text',
+    text: '4f1c9aa',
+    mono: true,
+    full: '4f1c9aa2b7e3d5c8f0a1b2c3d4e5f60718293a4b',
   })
 })

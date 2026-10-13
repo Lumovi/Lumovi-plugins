@@ -104,13 +104,16 @@ export const targetRevision = (object: Object_) => text(at(sourcesOf(object)[0],
 /** A revision as a summary shows it: seven characters of a commit (SHA-1 or SHA-256), the rest as it is. */
 export const shortRevision = (revision: string) => (/^[0-9a-f]{40,64}$/.test(revision) ? revision.slice(0, 7) : revision)
 
-/** Where it's from: its (first) repository and path, as one text, and how many more sources. */
+/**
+ * Where it's from: its (first) path and repository, as one text, the path first (the part that
+ * tells one application from the next, kept where the text is cut), and how many more sources.
+ */
 export function source(object: Object_): string {
   const all = sourcesOf(object)
   const first = all[0]
   const repo = (text(at(first, 'repoURL')) ?? '').replace(/^https?:\/\//, '').replace(/\.git$/, '')
   const path = text(at(first, 'path')) ?? text(at(first, 'chart'))
-  const said = [repo, path].filter(Boolean).join(' · ')
+  const said = [path, repo].filter(Boolean).join(' · ')
   return all.length > 1 ? `${said} and ${all.length - 1} more` : said
 }
 

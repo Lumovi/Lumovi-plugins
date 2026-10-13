@@ -4,7 +4,7 @@ kind: Plugin
 metadata:
   name: cloudnative-pg
 spec:
-  version: 1.0.0
+  version: 1.1.0
   needs:
     lumovi: 1.22.0
   groups:
@@ -17,6 +17,26 @@ spec:
     - { group: postgresql.cnpg.io, kind: Backup }
     - { group: postgresql.cnpg.io, kind: ScheduledBackup }
     - { group: postgresql.cnpg.io, kind: Database }
+  # Its pages (src/cloudnative-pg): every cluster and the one picked, with its instances, backups,
+  # schedules and poolers; and every cluster's backups.
+  pages:
+    - { id: clusters, title: Overview }
+    - { id: backups, title: Backup health }
+  # Of Kubernetes' own, only its instances' pods: picked by their cnpg.io/cluster label, with
+  # their role, node, readiness, restarts and age.
+  reads:
+    - group: ''
+      kind: Pod
+      fields:
+        [
+          metadata.name,
+          metadata.namespace,
+          metadata.labels,
+          metadata.creationTimestamp,
+          spec.nodeName,
+          status.conditions,
+          status.containerStatuses.restartCount,
+        ]
   views:
     - name: cloudnative-pg-clusters
       kinds:

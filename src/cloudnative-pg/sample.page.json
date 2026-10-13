@@ -1,0 +1,445 @@
+[
+  {
+    "part": "Split",
+    "props": {
+      "list": {
+        "title": "Clusters",
+        "asGiven": true,
+        "rows": [
+          {
+            "key": "analytics/reports-db",
+            "lead": {
+              "level": "critical",
+              "name": "reports-db",
+              "under": "No instance can be promoted: reports-db-1 and reports-db-2 both lost their storage"
+            },
+            "status": {
+              "level": "critical",
+              "word": "Failed"
+            }
+          },
+          {
+            "key": "shop/sessions-db",
+            "lead": {
+              "level": "progressing",
+              "name": "sessions-db",
+              "under": "Switching over to sessions-db-2"
+            },
+            "status": {
+              "level": "progressing",
+              "word": "Switching over"
+            }
+          },
+          {
+            "key": "shop/orders-db",
+            "lead": {
+              "level": "healthy",
+              "name": "orders-db",
+              "under": "3 of 3 ready · shop"
+            },
+            "status": {
+              "level": "healthy",
+              "word": "Healthy"
+            }
+          },
+          {
+            "key": "billing/payments-reconciliation-ledger-db",
+            "lead": {
+              "level": "healthy",
+              "name": "payments-reconciliation-ledger-db",
+              "under": "3 of 3 ready · billing"
+            },
+            "status": {
+              "level": "healthy",
+              "word": "Healthy"
+            }
+          }
+        ],
+        "picked": "analytics/reports-db"
+      },
+      "onPick": "h1"
+    },
+    "children": [
+      {
+        "part": "Stack",
+        "props": {},
+        "children": [
+          {
+            "part": "Header",
+            "props": {
+              "name": "reports-db",
+              "status": {
+                "level": "critical",
+                "word": "Failed",
+                "detail": "No instance can be promoted: reports-db-1 and reports-db-2 both lost their storage"
+              }
+            },
+            "children": []
+          },
+          {
+            "part": "Tiles",
+            "props": {
+              "tiles": [
+                {
+                  "key": "ready",
+                  "icon": "server",
+                  "label": "Instances ready",
+                  "value": {
+                    "kind": "figure",
+                    "text": "0/2"
+                  },
+                  "level": "warning",
+                  "detail": "2 not ready"
+                },
+                {
+                  "key": "primary",
+                  "icon": "database",
+                  "label": "Primary",
+                  "value": {
+                    "kind": "words",
+                    "text": "reports-db-1"
+                  },
+                  "detail": "timeline 2",
+                  "opens": {
+                    "list": "/Pod",
+                    "labels": [
+                      "cnpg.io/instanceName=reports-db-1"
+                    ]
+                  }
+                },
+                {
+                  "key": "backup",
+                  "icon": "timer",
+                  "label": "Last backup",
+                  "value": {
+                    "kind": "time",
+                    "time": "2026-10-11T02:09:40Z"
+                  },
+                  "detail": "Volume snapshot"
+                },
+                {
+                  "key": "version",
+                  "icon": "package",
+                  "label": "PostgreSQL",
+                  "value": {
+                    "kind": "figure",
+                    "text": "17.2"
+                  },
+                  "detail": "ghcr.io/cloudnative-pg/postgresql:17.2"
+                }
+              ]
+            },
+            "children": []
+          },
+          {
+            "part": "Card",
+            "props": {
+              "title": "Instances",
+              "note": "2"
+            },
+            "children": [
+              {
+                "part": "Table",
+                "props": {
+                  "title": "Instances",
+                  "headings": true,
+                  "columns": [
+                    {
+                      "name": "Role",
+                      "kind": "text",
+                      "width": "narrow"
+                    },
+                    {
+                      "name": "Status",
+                      "kind": "status",
+                      "sorts": true
+                    },
+                    {
+                      "name": "Node",
+                      "kind": "text"
+                    },
+                    {
+                      "name": "Restarts",
+                      "kind": "number",
+                      "width": "narrow"
+                    },
+                    {
+                      "name": "Age",
+                      "kind": "age",
+                      "width": "narrow"
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "t23",
+                      "lead": {
+                        "level": "critical",
+                        "name": "reports-db-1"
+                      },
+                      "cells": [
+                        {
+                          "kind": "text",
+                          "text": "Primary"
+                        },
+                        {
+                          "kind": "status",
+                          "level": "critical",
+                          "word": "Not ready"
+                        },
+                        {
+                          "kind": "text",
+                          "text": "ip-10-0-1-23"
+                        },
+                        {
+                          "kind": "number",
+                          "value": 14
+                        },
+                        {
+                          "kind": "age",
+                          "time": "2026-10-01T09:00:00Z"
+                        }
+                      ],
+                      "opens": "t23"
+                    },
+                    {
+                      "key": "t24",
+                      "lead": {
+                        "level": "critical",
+                        "name": "reports-db-2"
+                      },
+                      "cells": [
+                        {
+                          "kind": "text",
+                          "text": "Replica"
+                        },
+                        {
+                          "kind": "status",
+                          "level": "critical",
+                          "word": "Not ready"
+                        },
+                        {
+                          "kind": "text",
+                          "text": "ip-10-0-2-51"
+                        },
+                        {
+                          "kind": "number",
+                          "value": 9
+                        },
+                        {
+                          "kind": "age",
+                          "time": "2026-10-01T09:00:00Z"
+                        }
+                      ],
+                      "opens": "t24"
+                    }
+                  ]
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "part": "Card",
+            "props": {
+              "title": "Backups",
+              "note": "2"
+            },
+            "children": [
+              {
+                "part": "Table",
+                "props": {
+                  "title": "Backups",
+                  "headings": true,
+                  "columns": [
+                    {
+                      "name": "Method",
+                      "kind": "text"
+                    },
+                    {
+                      "name": "Status",
+                      "kind": "status"
+                    },
+                    {
+                      "name": "Started",
+                      "kind": "age",
+                      "width": "narrow",
+                      "sorts": true
+                    },
+                    {
+                      "name": "Took",
+                      "kind": "text",
+                      "width": "narrow"
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "t11",
+                      "lead": {
+                        "level": "critical",
+                        "name": "reports-db-20261013-0200"
+                      },
+                      "cells": [
+                        {
+                          "kind": "text",
+                          "text": "Volume snapshot"
+                        },
+                        {
+                          "kind": "status",
+                          "level": "critical",
+                          "word": "Failed"
+                        },
+                        {
+                          "kind": "age",
+                          "time": "2026-10-13T02:00:00Z"
+                        },
+                        {
+                          "kind": "text",
+                          "text": "31s"
+                        }
+                      ],
+                      "opens": "t11"
+                    },
+                    {
+                      "key": "t12",
+                      "lead": {
+                        "level": "healthy",
+                        "name": "reports-db-20261011-0200"
+                      },
+                      "cells": [
+                        {
+                          "kind": "text",
+                          "text": "Volume snapshot"
+                        },
+                        {
+                          "kind": "status",
+                          "level": "healthy",
+                          "word": "Completed"
+                        },
+                        {
+                          "kind": "age",
+                          "time": "2026-10-11T02:00:00Z"
+                        },
+                        {
+                          "kind": "text",
+                          "text": "9m 40s"
+                        }
+                      ],
+                      "opens": "t12"
+                    }
+                  ],
+                  "shows": 5
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "part": "Pair",
+            "props": {
+              "first": "wider"
+            },
+            "children": [
+              {
+                "part": "Card",
+                "props": {
+                  "title": "Schedules",
+                  "note": "1"
+                },
+                "children": [
+                  {
+                    "part": "Table",
+                    "props": {
+                      "title": "Schedules",
+                      "headings": true,
+                      "columns": [
+                        {
+                          "name": "Last",
+                          "kind": "age",
+                          "width": "narrow"
+                        },
+                        {
+                          "name": "Next",
+                          "kind": "age",
+                          "width": "narrow"
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "key": "t17",
+                          "lead": {
+                            "name": "Every day at 02:00 (operator’s time)",
+                            "under": "nightly · 0 0 2 * * *"
+                          },
+                          "cells": [
+                            {
+                              "kind": "none"
+                            },
+                            {
+                              "kind": "age",
+                              "time": "2026-10-14T02:00:00Z"
+                            }
+                          ],
+                          "opens": "t17"
+                        }
+                      ]
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "part": "Card",
+                "props": {
+                  "title": "Poolers",
+                  "note": "1"
+                },
+                "children": [
+                  {
+                    "part": "Table",
+                    "props": {
+                      "title": "Poolers",
+                      "headings": true,
+                      "columns": [
+                        {
+                          "name": "Type",
+                          "kind": "text",
+                          "width": "narrow"
+                        },
+                        {
+                          "name": "Ready",
+                          "kind": "text",
+                          "width": "narrow"
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "key": "t19",
+                          "lead": {
+                            "level": "critical",
+                            "name": "reports-db-ro"
+                          },
+                          "cells": [
+                            {
+                              "kind": "text",
+                              "text": "ro"
+                            },
+                            {
+                              "kind": "text",
+                              "text": "0 of 1"
+                            }
+                          ],
+                          "opens": "t19"
+                        }
+                      ]
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

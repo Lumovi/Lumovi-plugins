@@ -163,7 +163,7 @@ test('Back up now…: on the picked cluster’s header, off while a backup of it
     prop<{ key: string; name: string; changes: boolean; asks: boolean; off?: string; note?: string }[]>(
       named(clustersPage(reads, chosen, nothing, nothing, nothing), 'Header')[0]!,
       'buttons',
-    )
+    ).filter((each) => each.key === 'backup')
   assert.deepEqual(button(reads(), 'analytics/reports-db'), [
     { key: 'backup', name: 'Back up now', changes: true, asks: true },
   ])
@@ -188,11 +188,67 @@ test('Back up now…: on the picked cluster’s header, off while a backup of it
   // Pressed: the cluster shown is the one handed to the press.
   const pressed: Handed[] = []
   const page = clustersPage(reads(), 'shop/sessions-db', nothing, nothing, (cluster) => pressed.push(cluster))
-  ;(prop<() => void>(named(page, 'Header')[0]!, 'onPress'))()
+  const onPress = prop<(carries: { button: string }) => void>(named(page, 'Header')[0]!, 'onPress')
+  // (A link's press is Lumovi's to take, and tells its page nothing; were it to, nothing follows.)
+  onPress({ button: 'shell' })
+  assert.deepEqual(pressed, [])
+  onPress({ button: 'backup' })
   assert.deepEqual(
     pressed.map(({ token }) => token),
     ['postgresql.cnpg.io/Cluster#2'],
   )
+})
+
+test('of its primary, once its pod is read: links to Lumovi’s Shell tab and a forward of 5432, and its log; each instance’s row goes to its logs', () => {
+  const page = clustersPage(reads(), 'shop/orders-db', nothing, nothing, nothing)
+  const buttons = prop<{ key: string; name: string; goes?: unknown }[]>(named(page, 'Header')[0]!, 'buttons')
+  // (orders-db-1, the sample's first pod.)
+  const primary = '/Pod#0'
+  assert.deepEqual(buttons.slice(0, -1), [
+    { key: 'shell', name: 'Shell into primary', goes: { object: primary, at: 'shell', container: 'postgres' } },
+    { key: 'forward', name: 'Forward 5432', goes: { object: primary, at: 'port-forward', port: 5432 } },
+  ])
+  // What changes something stands last, and is the only one that does.
+  assert.deepEqual(
+    buttons.map((each) => [each.key, 'changes' in each]),
+    [
+      ['shell', false],
+      ['forward', false],
+      ['backup', true],
+    ],
+  )
+  // Its log, read and drawn by Lumovi: the part names the pod and the container, and no line.
+  assert.deepEqual(
+    named(page, 'Logs').map((log) => log.props),
+    [{ title: 'Primary’s log', pod: primary, container: 'postgres' }],
+  )
+  // Each instance's row goes to that pod's logs, and opens nothing else.
+  const instances = named(page, 'Table').find((table) => prop(table, 'title') === 'Instances')!
+  assert.deepEqual(
+    prop<{ lead: { name: string }; goes?: unknown; opens?: unknown }[]>(instances, 'rows').map((row) => [
+      row.lead.name,
+      row.goes,
+      row.opens,
+    ]),
+    [
+      ['orders-db-1', { object: '/Pod#0', at: 'logs', container: 'postgres' }, undefined],
+      ['orders-db-2', { object: '/Pod#1', at: 'logs', container: 'postgres' }, undefined],
+      ['orders-db-3', { object: '/Pod#2', at: 'logs', container: 'postgres' }, undefined],
+    ],
+  )
+  // While its pods are being read, where they couldn't be, or where its primary has no pod: no
+  // link and no log, only what it had.
+  const gone = labelled('/Pod', 'cnpg.io/cluster').filter(
+    (pod) => (pod.object.metadata as { name?: string }).name !== 'orders-db-1',
+  )
+  for (const pods of [undefined, { ended: 'You may not list pods in this cluster.' }, { objects: gone }]) {
+    const without = clustersPage({ ...reads(), pods }, 'shop/orders-db', nothing, nothing, nothing)
+    assert.deepEqual(
+      prop<{ key: string }[]>(named(without, 'Header')[0]!, 'buttons').map((each) => each.key),
+      ['backup'],
+    )
+    assert.equal(named(without, 'Logs').length, 0)
+  }
 })
 
 test('Back up now… proposes a Backup in the cluster’s namespace, its method the person’s pick where there are several', () => {

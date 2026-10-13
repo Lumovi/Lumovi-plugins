@@ -75,6 +75,24 @@
               },
               "buttons": [
                 {
+                  "key": "shell",
+                  "name": "Shell into primary",
+                  "goes": {
+                    "object": "t23",
+                    "at": "shell",
+                    "container": "postgres"
+                  }
+                },
+                {
+                  "key": "forward",
+                  "name": "Forward 5432",
+                  "goes": {
+                    "object": "t23",
+                    "at": "port-forward",
+                    "port": 5432
+                  }
+                },
+                {
                   "key": "backup",
                   "name": "Back up now",
                   "changes": true,
@@ -208,7 +226,11 @@
                           "time": "2026-10-01T09:00:00Z"
                         }
                       ],
-                      "opens": "t23"
+                      "goes": {
+                        "object": "t23",
+                        "at": "logs",
+                        "container": "postgres"
+                      }
                     },
                     {
                       "key": "t24",
@@ -239,13 +261,26 @@
                           "time": "2026-10-01T09:00:00Z"
                         }
                       ],
-                      "opens": "t24"
+                      "goes": {
+                        "object": "t24",
+                        "at": "logs",
+                        "container": "postgres"
+                      }
                     }
                   ]
                 },
                 "children": []
               }
             ]
+          },
+          {
+            "part": "Logs",
+            "props": {
+              "title": "Primary’s log",
+              "pod": "t23",
+              "container": "postgres"
+            },
+            "children": []
           },
           {
             "part": "Card",

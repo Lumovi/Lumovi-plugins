@@ -48,6 +48,9 @@ const ROWS = 5
 /** The most rows a Table takes: past them, the door stops a page. */
 const MOST = 5_000
 const DAY = 24 * 60 * 60 * 1000
+/** PostgreSQL's container in every instance's pod, as the operator names it, and its port. */
+const CONTAINER = 'postgres'
+const PORT = 5432
 
 /**
  * What one read has given: nothing yet; its objects (and, of a list past Lumovi's limit, the
@@ -107,13 +110,21 @@ function ordered(clusters: readonly Handed[]): Handed[] {
 
 // ——— Clusters ———
 
+/** A cluster's primary, among the pods read: none while they're being read, or where it has none. */
+function primaryPod(cluster: Handed, reads: Reads): Handed | undefined {
+  const { name } = primaryOf(cluster.object)
+  return name === undefined
+    ? undefined
+    : objectsOf(reads.pods)?.find(
+        (each) => instanceOf(each.object, cluster.object) && nameOf(each.object) === name,
+      )
+}
+
 function clusterTiles(cluster: Handed, reads: Reads): Described {
   const { object } = cluster
   const { ready, of } = instancesOf(object)
   const primary = primaryOf(object)
-  const pod = objectsOf(reads.pods)?.find(
-    (each) => instanceOf(each.object, object) && nameOf(each.object) === primary.name,
-  )
+  const pod = primaryPod(cluster, reads)
   const last = lastBackupOf(object)
   const latest = (objectsOf(reads.backups) ?? [])
     .filter((backup) => belongsTo(backup.object, object) && backupStatus(backup.object).word === 'Completed')
@@ -193,7 +204,8 @@ function instancesCard(cluster: Handed, reads: Reads, retry: () => void): Descri
           { kind: 'number', value: restarts },
           age(createdOf(object)),
         ],
-        opens: token,
+        // (Lumovi's own Logs tab of that pod, at PostgreSQL's container.)
+        goes: { object: token, at: 'logs', container: CONTAINER },
       }
     })
   return h(
@@ -411,6 +423,7 @@ function picked(
   const reason = reasonOf(object)
   const off = backUpOff(object, reads)
   const note = backUpNote(object, reads)
+  const primary = primaryPod(cluster, reads)
   return h(
     'Stack',
     { key: 'picked' },
@@ -420,6 +433,23 @@ function picked(
       // (Why it's in its phase, under its word: where someone on its page looks for why.)
       status: { level: phase.level, word: phase.word, ...(reason ? { detail: reason } : {}) },
       buttons: [
+        // Lumovi's own places for its primary, once its pod is read: its Shell tab, and a forward of
+        // PostgreSQL's port. Lumovi opens them, on the person's press. (Its log is on the page, and
+        // each instance's row goes to its logs: the header has no third way there.)
+        ...(primary
+          ? [
+              {
+                key: 'shell',
+                name: 'Shell into primary',
+                goes: { object: primary.token, at: 'shell', container: CONTAINER },
+              },
+              {
+                key: 'forward',
+                name: `Forward ${PORT}`,
+                goes: { object: primary.token, at: 'port-forward', port: PORT },
+              },
+            ]
+          : []),
         {
           key: 'backup',
           name: 'Back up now',
@@ -429,10 +459,17 @@ function picked(
           ...(note ? { note } : {}),
         },
       ],
-      onPress: () => press(cluster),
+      // (Only Back up now tells its page it was pressed: the rest go where they say.)
+      onPress: ({ button }: { button: string }) => {
+        if (button === 'backup') press(cluster)
+      },
     }),
     clusterTiles(cluster, reads),
     instancesCard(cluster, reads, retry),
+    // What its primary is writing now: Lumovi reads and draws it, and this code never sees a line.
+    primary
+      ? h('Logs', { key: 'log', title: 'Primary’s log', pod: primary.token, container: CONTAINER })
+      : undefined,
     backupsCard(cluster, reads, retry),
     scheduledAndPooled(cluster, reads),
   )

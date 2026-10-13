@@ -104,7 +104,8 @@
         "part": "Card",
         "props": {
           "title": "Prometheus k8s",
-          "note": "in monitoring"
+          "note": "in monitoring",
+          "about": "Whoever may reach it sees its targets in every namespace. Asked of this Prometheus server, as you."
         },
         "children": [
           {
@@ -314,7 +315,8 @@
         "part": "Card",
         "props": {
           "title": "Prometheus team-a",
-          "note": "in team-a"
+          "note": "in team-a",
+          "about": "Whoever may reach it sees its targets in every namespace. Asked of this Prometheus server, as you."
         },
         "children": [
           {

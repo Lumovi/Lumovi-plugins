@@ -143,8 +143,13 @@ function placeCard(place: Place, asked: Asked, again: () => void): Described {
     {
       key: place.namespace,
       title: `Prometheus ${listed(place.names)}`,
-      // (Where several share the namespace, the one the API server sent the ask to answered.)
-      note: place.names.length > 1 ? `in ${place.namespace} · from whichever one answered` : `in ${place.namespace}`,
+      note: `in ${place.namespace}`,
+      // Who else could have this answer, and whose it is. (Where several share the namespace, the
+      // one the API server sent the ask to answered.)
+      about:
+        place.names.length > 1
+          ? `Whoever may reach one sees its targets in every namespace. Shown: whichever server answered. Asking again may show ${place.names.length > 2 ? 'another' : 'the other'}’s.`
+          : 'Whoever may reach it sees its targets in every namespace. Asked of this Prometheus server, as you.',
     },
     h('Table', {
       title: `Scrape pools of ${listed(place.names)}`,

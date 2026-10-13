@@ -208,6 +208,66 @@ export function backupStatus(backup: Object_): Status {
   return BACKUP_PHASES[phase] ?? { level: 'progressing', word: phase }
 }
 
+/** The phases of a backup CloudNativePG is still making. */
+const UNDER_WAY = ['pending', 'started', 'running', 'finalizing']
+/**
+ * How long a backup made with no phase yet may still be one CloudNativePG is about to start (it
+ * says one within seconds): past it, nobody is making it.
+ */
+export const STARTING_MS = 10 * 60 * 1000
+/**
+ * Whether a backup is still to be made, or being made, at `now`: one of those phases, or none said
+ * yet of one made in the last ten minutes.
+ */
+export function underWay(backup: Object_, now: number): boolean {
+  const phase = text(at(backup, 'status', 'phase'))
+  if (phase !== undefined) return UNDER_WAY.includes(phase)
+  const made = Date.parse(createdOf(backup) ?? '')
+  return !Number.isNaN(made) && now - made < STARTING_MS
+}
+
+/** The most of a choice's words Lumovi takes. */
+const OPTION = 40
+/** Words cut to a choice's most in their middle, as Lumovi cuts a name: its end kept. */
+const cut = (words: string) => {
+  if (words.length <= OPTION) return words
+  const end = Math.floor((OPTION - 1) / 2)
+  return `${words.slice(0, OPTION - 1 - end)}…${words.slice(-end)}`
+}
+
+/** A way a cluster's backup can be made, as it's set up: in words, and the backup's spec for it. */
+export interface BackupMethod {
+  label: string
+  spec: Record<string, unknown>
+}
+
+/**
+ * The ways `cluster` can be backed up, as it's set up: a volume snapshot, a Barman object store,
+ * and each plugin it archives its WAL with (as CloudNativePG's own backups name them). None, where
+ * it has none of them.
+ */
+export function backupMethodsOf(cluster: Object_): BackupMethod[] {
+  const of = { name: nameOf(cluster) }
+  const set = (method: string) => {
+    const given = at(cluster, 'spec', 'backup', method)
+    return typeof given === 'object' && given !== null && !Array.isArray(given)
+  }
+  const methods: BackupMethod[] = []
+  for (const method of ['volumeSnapshot', 'barmanObjectStore']) {
+    if (set(method)) methods.push({ label: METHODS[method]!, spec: { cluster: of, method } })
+  }
+  const plugins = at(cluster, 'spec', 'plugins')
+  for (const plugin of Array.isArray(plugins) ? plugins : []) {
+    const name = text(at(plugin, 'name'))
+    if (!name || at(plugin, 'isWALArchiver') !== true || at(plugin, 'enabled') === false) continue
+    methods.push({
+      label: cut(`Plugin ${name}`),
+      spec: { cluster: of, method: 'plugin', pluginConfiguration: { name } },
+    })
+  }
+  return methods
+}
+
 /** When a backup started: as it says, else when it was made. */
 export const startedOf = (backup: Object_) =>
   text(at(backup, 'status', 'startedAt')) ?? createdOf(backup)

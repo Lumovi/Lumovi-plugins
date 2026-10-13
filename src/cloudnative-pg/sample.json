@@ -18,6 +18,14 @@
           "imageName": "ghcr.io/cloudnative-pg/postgresql:16.4-bookworm",
           "storage": {
             "size": "20Gi"
+          },
+          "backup": {
+            "volumeSnapshot": {
+              "className": "csi-snapclass"
+            },
+            "barmanObjectStore": {
+              "destinationPath": "s3://example-backups/orders-db"
+            }
           }
         },
         "status": {
@@ -43,6 +51,11 @@
           "imageName": "ghcr.io/cloudnative-pg/postgresql:17.2",
           "storage": {
             "size": "20Gi"
+          },
+          "backup": {
+            "volumeSnapshot": {
+              "className": "csi-snapclass"
+            }
           }
         },
         "status": {
@@ -69,7 +82,21 @@
           "imageName": "ghcr.io/cloudnative-pg/postgresql:16.4-bookworm",
           "storage": {
             "size": "20Gi"
-          }
+          },
+          "backup": {
+            "volumeSnapshot": {
+              "className": "csi-snapclass"
+            }
+          },
+          "plugins": [
+            {
+              "name": "barman-cloud.cloudnative-pg.io",
+              "isWALArchiver": true,
+              "parameters": {
+                "barmanObjectName": "sessions-store"
+              }
+            }
+          ]
         },
         "status": {
           "phase": "Switchover in progress",
@@ -95,6 +122,11 @@
           "imageName": "ghcr.io/cloudnative-pg/postgresql:16.4-bookworm",
           "storage": {
             "size": "20Gi"
+          },
+          "backup": {
+            "volumeSnapshot": {
+              "className": "csi-snapclass"
+            }
           }
         },
         "status": {
@@ -724,5 +756,47 @@
         }
       }
     ]
-  }
+  },
+  "presses": [
+    {
+      "part": "Split",
+      "event": "pick",
+      "carries": {
+        "row": "shop/sessions-db"
+      }
+    },
+    {
+      "part": "Header",
+      "carries": {
+        "button": "backup"
+      },
+      "answer": "cancelled"
+    },
+    {
+      "part": "Split",
+      "event": "pick",
+      "carries": {
+        "row": "shop/orders-db"
+      }
+    },
+    {
+      "part": "Header",
+      "carries": {
+        "button": "backup"
+      }
+    },
+    {
+      "part": "Split",
+      "event": "pick",
+      "carries": {
+        "row": "analytics/reports-db"
+      }
+    },
+    {
+      "part": "Header",
+      "carries": {
+        "button": "backup"
+      }
+    }
+  ]
 }

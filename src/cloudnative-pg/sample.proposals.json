@@ -1,0 +1,53 @@
+[
+  {
+    "action": "create",
+    "kind": "postgresql.cnpg.io/Backup",
+    "verb": "Back up now",
+    "fields": [
+      "method (choice)"
+    ],
+    "writes": [
+      "metadata.generateName",
+      "spec.cluster.name",
+      "spec.method",
+      "spec.pluginConfiguration.name (some options)"
+    ],
+    "change": {
+      "body": {
+        "metadata": {
+          "generateName": "sessions-db-"
+        },
+        "spec": {
+          "cluster": {
+            "name": "sessions-db"
+          },
+          "method": "volumeSnapshot"
+        }
+      }
+    }
+  },
+  {
+    "action": "create",
+    "kind": "postgresql.cnpg.io/Backup",
+    "verb": "Back up now",
+    "fields": [],
+    "writes": [
+      "metadata.generateName",
+      "spec.cluster.name",
+      "spec.method"
+    ],
+    "change": {
+      "body": {
+        "metadata": {
+          "generateName": "reports-db-"
+        },
+        "spec": {
+          "cluster": {
+            "name": "reports-db"
+          },
+          "method": "volumeSnapshot"
+        }
+      }
+    }
+  }
+]

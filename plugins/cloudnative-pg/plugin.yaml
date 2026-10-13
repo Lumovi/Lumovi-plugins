@@ -37,6 +37,11 @@ spec:
           status.conditions,
           status.containerStatuses.restartCount,
         ]
+  # From its Overview, Back up now… creates a Backup of the cluster picked, once the person
+  # confirms it in Lumovi's own dialog. (Switch over writes a cluster's status, which a page can't:
+  # it stays the view's action, below.)
+  changes:
+    - { group: postgresql.cnpg.io, kind: Backup, actions: [create] }
   views:
     - name: cloudnative-pg-clusters
       kinds:

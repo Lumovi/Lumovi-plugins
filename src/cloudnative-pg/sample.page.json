@@ -72,7 +72,16 @@
                 "level": "critical",
                 "word": "Failed",
                 "detail": "No instance can be promoted: reports-db-1 and reports-db-2 both lost their storage"
-              }
+              },
+              "buttons": [
+                {
+                  "key": "backup",
+                  "name": "Back up now",
+                  "changes": true,
+                  "asks": true
+                }
+              ],
+              "onPress": "h2"
             },
             "children": []
           },

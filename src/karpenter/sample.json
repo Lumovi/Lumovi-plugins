@@ -1,0 +1,462 @@
+{
+  "opens": {
+    "page": "overview"
+  },
+  "objects": {
+    "karpenter.sh/NodePool": [
+      {
+        "metadata": {
+          "name": "default",
+          "creationTimestamp": "2026-09-01T09:00:00Z"
+        },
+        "spec": {
+          "template": {
+            "spec": {
+              "nodeClassRef": {
+                "group": "karpenter.k8s.aws",
+                "kind": "EC2NodeClass",
+                "name": "default"
+              },
+              "requirements": [
+                {
+                  "key": "karpenter.sh/capacity-type",
+                  "operator": "In",
+                  "values": ["spot", "on-demand"]
+                },
+                {
+                  "key": "karpenter.k8s.aws/instance-category",
+                  "operator": "In",
+                  "values": ["c", "m", "r"]
+                }
+              ]
+            }
+          },
+          "limits": {
+            "cpu": "1000",
+            "memory": "1000Gi"
+          },
+          "disruption": {
+            "consolidationPolicy": "WhenEmptyOrUnderutilized",
+            "consolidateAfter": "1m"
+          }
+        },
+        "status": {
+          "resources": {
+            "cpu": "32",
+            "memory": "96Gi",
+            "nodes": "3"
+          },
+          "conditions": [
+            {
+              "type": "Ready",
+              "status": "True",
+              "reason": "Ready",
+              "lastTransitionTime": "2026-09-01T09:00:10Z"
+            }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "gpu",
+          "creationTimestamp": "2026-09-14T13:20:00Z"
+        },
+        "spec": {
+          "template": {
+            "spec": {
+              "nodeClassRef": {
+                "group": "karpenter.k8s.aws",
+                "kind": "EC2NodeClass",
+                "name": "gpu"
+              },
+              "requirements": [
+                {
+                  "key": "karpenter.sh/capacity-type",
+                  "operator": "In",
+                  "values": ["on-demand"]
+                },
+                {
+                  "key": "karpenter.k8s.aws/instance-family",
+                  "operator": "In",
+                  "values": ["g5"]
+                }
+              ]
+            }
+          },
+          "limits": {
+            "cpu": "64"
+          }
+        },
+        "status": {
+          "resources": {
+            "cpu": "8",
+            "memory": "32Gi",
+            "nodes": "1"
+          },
+          "conditions": [
+            {
+              "type": "Ready",
+              "status": "True",
+              "reason": "Ready",
+              "lastTransitionTime": "2026-09-14T13:20:05Z"
+            }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "batch",
+          "creationTimestamp": "2026-10-12T08:30:00Z"
+        },
+        "spec": {
+          "template": {
+            "spec": {
+              "nodeClassRef": {
+                "group": "karpenter.k8s.aws",
+                "kind": "EC2NodeClass",
+                "name": "batch"
+              },
+              "requirements": [
+                {
+                  "key": "karpenter.sh/capacity-type",
+                  "operator": "In",
+                  "values": ["spot"]
+                }
+              ]
+            }
+          }
+        },
+        "status": {
+          "conditions": [
+            {
+              "type": "Ready",
+              "status": "False",
+              "reason": "NodeClassNotReady",
+              "message": "NodeClass not ready",
+              "lastTransitionTime": "2026-10-12T08:30:02Z"
+            }
+          ]
+        }
+      }
+    ],
+    "karpenter.sh/NodeClaim": [
+      {
+        "metadata": {
+          "name": "default-7xk2p",
+          "creationTimestamp": "2026-10-10T06:12:00Z",
+          "labels": {
+            "karpenter.sh/nodepool": "default",
+            "karpenter.sh/capacity-type": "spot",
+            "node.kubernetes.io/instance-type": "m6i.2xlarge",
+            "topology.kubernetes.io/zone": "eu-west-1a"
+          }
+        },
+        "status": {
+          "nodeName": "ip-10-0-12-34.eu-west-1.compute.internal",
+          "conditions": [
+            { "type": "Launched", "status": "True", "lastTransitionTime": "2026-10-10T06:12:20Z" },
+            { "type": "Registered", "status": "True", "lastTransitionTime": "2026-10-10T06:13:05Z" },
+            { "type": "Initialized", "status": "True", "lastTransitionTime": "2026-10-10T06:13:40Z" },
+            { "type": "Ready", "status": "True", "lastTransitionTime": "2026-10-10T06:13:40Z" }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "default-q4m8t",
+          "creationTimestamp": "2026-10-11T14:02:00Z",
+          "labels": {
+            "karpenter.sh/nodepool": "default",
+            "karpenter.sh/capacity-type": "on-demand",
+            "node.kubernetes.io/instance-type": "c6i.4xlarge",
+            "topology.kubernetes.io/zone": "eu-west-1b"
+          }
+        },
+        "status": {
+          "nodeName": "ip-10-0-45-67.eu-west-1.compute.internal",
+          "conditions": [
+            { "type": "Launched", "status": "True", "lastTransitionTime": "2026-10-11T14:02:18Z" },
+            { "type": "Registered", "status": "True", "lastTransitionTime": "2026-10-11T14:03:01Z" },
+            { "type": "Initialized", "status": "True", "lastTransitionTime": "2026-10-11T14:03:30Z" },
+            { "type": "Ready", "status": "True", "lastTransitionTime": "2026-10-11T14:03:30Z" },
+            { "type": "Consolidatable", "status": "True", "lastTransitionTime": "2026-10-12T09:15:00Z" }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "default-h2n9c",
+          "creationTimestamp": "2026-10-09T22:40:00Z",
+          "labels": {
+            "karpenter.sh/nodepool": "default",
+            "karpenter.sh/capacity-type": "spot",
+            "node.kubernetes.io/instance-type": "m6i.2xlarge",
+            "topology.kubernetes.io/zone": "eu-west-1c"
+          }
+        },
+        "status": {
+          "nodeName": "ip-10-0-78-90.eu-west-1.compute.internal",
+          "conditions": [
+            { "type": "Launched", "status": "True", "lastTransitionTime": "2026-10-09T22:40:16Z" },
+            { "type": "Registered", "status": "True", "lastTransitionTime": "2026-10-09T22:41:02Z" },
+            { "type": "Initialized", "status": "True", "lastTransitionTime": "2026-10-09T22:41:35Z" },
+            { "type": "Ready", "status": "True", "lastTransitionTime": "2026-10-09T22:41:35Z" }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "gpu-v8r3w",
+          "creationTimestamp": "2026-10-05T11:00:00Z",
+          "labels": {
+            "karpenter.sh/nodepool": "gpu",
+            "karpenter.sh/capacity-type": "on-demand",
+            "node.kubernetes.io/instance-type": "g5.2xlarge",
+            "topology.kubernetes.io/zone": "eu-west-1a"
+          }
+        },
+        "status": {
+          "nodeName": "ip-10-0-23-45.eu-west-1.compute.internal",
+          "conditions": [
+            { "type": "Launched", "status": "True", "lastTransitionTime": "2026-10-05T11:00:25Z" },
+            { "type": "Registered", "status": "True", "lastTransitionTime": "2026-10-05T11:01:40Z" },
+            { "type": "Initialized", "status": "True", "lastTransitionTime": "2026-10-05T11:02:30Z" },
+            { "type": "Ready", "status": "True", "lastTransitionTime": "2026-10-05T11:02:30Z" },
+            {
+              "type": "Drifted",
+              "status": "True",
+              "reason": "NodeClassDrifted",
+              "lastTransitionTime": "2026-10-12T07:45:00Z"
+            }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "default-b6t1z",
+          "creationTimestamp": "2026-10-12T10:02:00Z",
+          "labels": {
+            "karpenter.sh/nodepool": "default",
+            "karpenter.sh/capacity-type": "spot",
+            "node.kubernetes.io/instance-type": "c6i.2xlarge",
+            "topology.kubernetes.io/zone": "eu-west-1b"
+          }
+        },
+        "status": {
+          "conditions": [
+            { "type": "Launched", "status": "True", "lastTransitionTime": "2026-10-12T10:02:17Z" },
+            { "type": "Registered", "status": "Unknown", "lastTransitionTime": "2026-10-12T10:02:00Z" },
+            { "type": "Ready", "status": "Unknown", "lastTransitionTime": "2026-10-12T10:02:00Z" }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "default-k3p5s",
+          "creationTimestamp": "2026-10-08T03:30:00Z",
+          "deletionTimestamp": "2026-10-12T09:58:00Z",
+          "labels": {
+            "karpenter.sh/nodepool": "default",
+            "karpenter.sh/capacity-type": "spot",
+            "node.kubernetes.io/instance-type": "m6i.xlarge",
+            "topology.kubernetes.io/zone": "eu-west-1a"
+          }
+        },
+        "status": {
+          "nodeName": "ip-10-0-90-12.eu-west-1.compute.internal",
+          "conditions": [
+            { "type": "Launched", "status": "True", "lastTransitionTime": "2026-10-08T03:30:15Z" },
+            { "type": "Registered", "status": "True", "lastTransitionTime": "2026-10-08T03:31:00Z" },
+            { "type": "Ready", "status": "True", "lastTransitionTime": "2026-10-08T03:31:30Z" }
+          ]
+        }
+      }
+    ],
+    "/Node": [
+      {
+        "metadata": {
+          "name": "ip-10-0-12-34.eu-west-1.compute.internal",
+          "creationTimestamp": "2026-10-10T06:13:05Z",
+          "labels": {
+            "karpenter.sh/nodepool": "default",
+            "karpenter.sh/capacity-type": "spot",
+            "node.kubernetes.io/instance-type": "m6i.2xlarge",
+            "topology.kubernetes.io/zone": "eu-west-1a"
+          }
+        },
+        "status": {
+          "allocatable": { "cpu": "7910m", "memory": "29Gi", "pods": "58" },
+          "conditions": [
+            { "type": "MemoryPressure", "status": "False" },
+            { "type": "DiskPressure", "status": "False" },
+            { "type": "PIDPressure", "status": "False" },
+            { "type": "Ready", "status": "True" }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "ip-10-0-45-67.eu-west-1.compute.internal",
+          "creationTimestamp": "2026-10-11T14:03:01Z",
+          "labels": {
+            "karpenter.sh/nodepool": "default",
+            "karpenter.sh/capacity-type": "on-demand",
+            "node.kubernetes.io/instance-type": "c6i.4xlarge",
+            "topology.kubernetes.io/zone": "eu-west-1b"
+          }
+        },
+        "status": {
+          "allocatable": { "cpu": "15890m", "memory": "28Gi", "pods": "234" },
+          "conditions": [
+            { "type": "MemoryPressure", "status": "False" },
+            { "type": "DiskPressure", "status": "False" },
+            { "type": "PIDPressure", "status": "False" },
+            { "type": "Ready", "status": "True" }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "ip-10-0-78-90.eu-west-1.compute.internal",
+          "creationTimestamp": "2026-10-09T22:41:02Z",
+          "labels": {
+            "karpenter.sh/nodepool": "default",
+            "karpenter.sh/capacity-type": "spot",
+            "node.kubernetes.io/instance-type": "m6i.2xlarge",
+            "topology.kubernetes.io/zone": "eu-west-1c"
+          }
+        },
+        "spec": {
+          "taints": [
+            { "key": "karpenter.sh/disrupted", "effect": "NoSchedule", "timeAdded": "2026-10-12T09:40:00Z" }
+          ]
+        },
+        "status": {
+          "allocatable": { "cpu": "7910m", "memory": "29Gi", "pods": "58" },
+          "conditions": [
+            { "type": "MemoryPressure", "status": "False" },
+            { "type": "DiskPressure", "status": "False" },
+            { "type": "PIDPressure", "status": "False" },
+            { "type": "Ready", "status": "True" }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "ip-10-0-23-45.eu-west-1.compute.internal",
+          "creationTimestamp": "2026-10-05T11:01:40Z",
+          "labels": {
+            "karpenter.sh/nodepool": "gpu",
+            "karpenter.sh/capacity-type": "on-demand",
+            "node.kubernetes.io/instance-type": "g5.2xlarge",
+            "topology.kubernetes.io/zone": "eu-west-1a"
+          }
+        },
+        "spec": {
+          "taints": [{ "key": "nvidia.com/gpu", "value": "true", "effect": "NoSchedule" }]
+        },
+        "status": {
+          "allocatable": { "cpu": "7910m", "memory": "29Gi", "nvidia.com/gpu": "1", "pods": "58" },
+          "conditions": [
+            { "type": "MemoryPressure", "status": "False" },
+            { "type": "DiskPressure", "status": "False" },
+            { "type": "PIDPressure", "status": "False" },
+            { "type": "Ready", "status": "True" }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "ip-10-0-1-10.eu-west-1.compute.internal",
+          "creationTimestamp": "2026-09-01T08:40:00Z",
+          "labels": {
+            "eks.amazonaws.com/nodegroup": "system",
+            "node.kubernetes.io/instance-type": "m6i.large",
+            "topology.kubernetes.io/zone": "eu-west-1a"
+          }
+        },
+        "status": {
+          "allocatable": { "cpu": "1930m", "memory": "7Gi", "pods": "29" },
+          "conditions": [{ "type": "Ready", "status": "True" }]
+        }
+      }
+    ],
+    "/Pod": [
+      {
+        "metadata": {
+          "name": "api-6c9d8f7b5-7xk2p",
+          "namespace": "shop",
+          "creationTimestamp": "2026-10-11T14:05:00Z"
+        },
+        "spec": {
+          "nodeName": "ip-10-0-45-67.eu-west-1.compute.internal"
+        },
+        "status": {
+          "phase": "Running",
+          "conditions": [
+            { "type": "PodScheduled", "status": "True" },
+            { "type": "Ready", "status": "True" }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "train-5f8c9d-x2kqv",
+          "namespace": "ml",
+          "creationTimestamp": "2026-10-12T09:52:00Z"
+        },
+        "status": {
+          "phase": "Pending",
+          "conditions": [
+            {
+              "type": "PodScheduled",
+              "status": "False",
+              "reason": "Unschedulable",
+              "message": "0/5 nodes are available: 1 Insufficient nvidia.com/gpu, 4 node(s) didn't match Pod's node affinity/selector. preemption: 0/5 nodes are available: 5 Preemption is not helpful for scheduling."
+            }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "nightly-report-29342880-m4d7r",
+          "namespace": "reports",
+          "creationTimestamp": "2026-10-12T09:00:00Z"
+        },
+        "status": {
+          "phase": "Pending",
+          "conditions": [
+            {
+              "type": "PodScheduled",
+              "status": "False",
+              "reason": "Unschedulable",
+              "message": "0/5 nodes are available: 5 node(s) didn't match Pod's node affinity/selector. preemption: 0/5 nodes are available: 5 Preemption is not helpful for scheduling."
+            }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "web-7b4f9c6d8-p9q2r",
+          "namespace": "shop",
+          "creationTimestamp": "2026-10-12T10:01:00Z"
+        },
+        "spec": {
+          "nodeName": "ip-10-0-12-34.eu-west-1.compute.internal"
+        },
+        "status": {
+          "phase": "Pending",
+          "conditions": [{ "type": "PodScheduled", "status": "True" }]
+        }
+      }
+    ]
+  },
+  "usage": {
+    "/Node": [
+      { "name": "ip-10-0-12-34.eu-west-1.compute.internal", "cpu": 4.21, "memory": 19327352832 },
+      { "name": "ip-10-0-45-67.eu-west-1.compute.internal", "cpu": 11.48, "memory": 15032385536 },
+      { "name": "ip-10-0-78-90.eu-west-1.compute.internal", "cpu": 1.06, "memory": 6442450944 },
+      { "name": "ip-10-0-1-10.eu-west-1.compute.internal", "cpu": 0.62, "memory": 3221225472 }
+    ]
+  }
+}

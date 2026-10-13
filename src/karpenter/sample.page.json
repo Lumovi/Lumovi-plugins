@@ -1,0 +1,600 @@
+[
+  {
+    "part": "Stack",
+    "props": {},
+    "children": [
+      {
+        "part": "Tiles",
+        "props": {
+          "tiles": [
+            {
+              "key": "pools",
+              "icon": "boxes",
+              "label": "Node pools ready",
+              "value": {
+                "kind": "figure",
+                "text": "2/3"
+              },
+              "level": "critical",
+              "detail": "1 not ready",
+              "opens": {
+                "list": "karpenter.sh/NodePool",
+                "health": [
+                  "critical",
+                  "warning"
+                ]
+              }
+            },
+            {
+              "key": "nodes",
+              "icon": "server",
+              "label": "Nodes ready",
+              "value": {
+                "kind": "figure",
+                "text": "4/4"
+              },
+              "level": "healthy",
+              "detail": "2 of 4 on spot",
+              "opens": {
+                "list": "/Node",
+                "labels": [
+                  "karpenter.sh/nodepool"
+                ]
+              }
+            },
+            {
+              "key": "launching",
+              "icon": "rocket",
+              "label": "Launching",
+              "value": {
+                "kind": "figure",
+                "text": "1"
+              },
+              "level": "progressing",
+              "detail": "2 pods waiting",
+              "opens": {
+                "list": "karpenter.sh/NodeClaim",
+                "health": [
+                  "progressing"
+                ]
+              }
+            },
+            {
+              "key": "replacing",
+              "icon": "refresh-cw",
+              "label": "Being replaced",
+              "opens": {
+                "list": "karpenter.sh/NodeClaim"
+              },
+              "value": {
+                "kind": "figure",
+                "text": "3"
+              },
+              "level": "warning",
+              "detail": "Drifted or terminating"
+            }
+          ]
+        },
+        "children": []
+      },
+      {
+        "part": "Card",
+        "props": {
+          "title": "Node pools"
+        },
+        "children": [
+          {
+            "part": "Table",
+            "props": {
+              "title": "Node pools",
+              "headings": false,
+              "columns": [
+                {
+                  "name": "Nodes",
+                  "kind": "number",
+                  "width": "narrow"
+                },
+                {
+                  "name": "CPU",
+                  "kind": "meter"
+                },
+                {
+                  "name": "Memory",
+                  "kind": "meter"
+                }
+              ],
+              "rows": [
+                {
+                  "key": "t3",
+                  "lead": {
+                    "level": "critical",
+                    "name": "batch",
+                    "under": "NodeClassNotReady · NodeClass not ready"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 0,
+                      "text": "0 nodes"
+                    },
+                    {
+                      "kind": "meter",
+                      "label": "CPU",
+                      "used": 0,
+                      "text": "0 cores · no limit"
+                    },
+                    {
+                      "kind": "meter",
+                      "label": "Memory",
+                      "used": 0,
+                      "text": "0 B · no limit"
+                    }
+                  ],
+                  "opens": "t3"
+                },
+                {
+                  "key": "t1",
+                  "lead": {
+                    "level": "healthy",
+                    "name": "default",
+                    "under": "Spot, on-demand · c, m, r"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 3,
+                      "text": "3 nodes"
+                    },
+                    {
+                      "kind": "meter",
+                      "label": "CPU",
+                      "used": 32,
+                      "of": 1000,
+                      "text": "32 of 1000 cores"
+                    },
+                    {
+                      "kind": "meter",
+                      "label": "Memory",
+                      "used": 103079215104,
+                      "of": 1073741824000,
+                      "text": "96 GiB of 1000 GiB"
+                    }
+                  ],
+                  "opens": "t1"
+                },
+                {
+                  "key": "t2",
+                  "lead": {
+                    "level": "healthy",
+                    "name": "gpu",
+                    "under": "On-demand · g5"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 1,
+                      "text": "1 node"
+                    },
+                    {
+                      "kind": "meter",
+                      "label": "CPU",
+                      "used": 8,
+                      "of": 64,
+                      "text": "8 of 64 cores"
+                    },
+                    {
+                      "kind": "meter",
+                      "label": "Memory",
+                      "used": 34359738368,
+                      "text": "32 GiB · no limit"
+                    }
+                  ],
+                  "opens": "t2"
+                }
+              ]
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "part": "Pair",
+        "props": {
+          "first": "wider"
+        },
+        "children": [
+          {
+            "part": "Card",
+            "props": {
+              "title": "Nodes"
+            },
+            "children": [
+              {
+                "part": "Table",
+                "props": {
+                  "title": "Nodes",
+                  "headings": false,
+                  "columns": [
+                    {
+                      "name": "CPU",
+                      "kind": "meter",
+                      "width": "narrow"
+                    },
+                    {
+                      "name": "Memory",
+                      "kind": "meter",
+                      "width": "narrow"
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "t10",
+                      "lead": {
+                        "level": "healthy",
+                        "name": "ip-10-0-12-34.eu-west-1.compute.internal",
+                        "under": "m6i.2xlarge · spot · eu-west-1a"
+                      },
+                      "cells": [
+                        {
+                          "kind": "meter",
+                          "label": "CPU",
+                          "used": 4.21,
+                          "of": 7.91,
+                          "text": "53%"
+                        },
+                        {
+                          "kind": "meter",
+                          "label": "Memory",
+                          "used": 19327352832,
+                          "of": 31138512896,
+                          "text": "62%"
+                        }
+                      ],
+                      "opens": "t10",
+                      "group": "default"
+                    },
+                    {
+                      "key": "t11",
+                      "lead": {
+                        "level": "healthy",
+                        "name": "ip-10-0-45-67.eu-west-1.compute.internal",
+                        "under": "c6i.4xlarge · on-demand · eu-west-1b"
+                      },
+                      "cells": [
+                        {
+                          "kind": "meter",
+                          "label": "CPU",
+                          "used": 11.48,
+                          "of": 15.89,
+                          "text": "72%"
+                        },
+                        {
+                          "kind": "meter",
+                          "label": "Memory",
+                          "used": 15032385536,
+                          "of": 30064771072,
+                          "text": "50%"
+                        }
+                      ],
+                      "opens": "t11",
+                      "group": "default"
+                    },
+                    {
+                      "key": "t12",
+                      "lead": {
+                        "level": "healthy",
+                        "name": "ip-10-0-78-90.eu-west-1.compute.internal",
+                        "under": "m6i.2xlarge · spot · eu-west-1c"
+                      },
+                      "cells": [
+                        {
+                          "kind": "meter",
+                          "label": "CPU",
+                          "used": 1.06,
+                          "of": 7.91,
+                          "text": "13%"
+                        },
+                        {
+                          "kind": "meter",
+                          "label": "Memory",
+                          "used": 6442450944,
+                          "of": 31138512896,
+                          "text": "21%"
+                        }
+                      ],
+                      "opens": "t12",
+                      "group": "default"
+                    },
+                    {
+                      "key": "t8",
+                      "lead": {
+                        "level": "progressing",
+                        "name": "default-b6t1z",
+                        "under": "c6i.2xlarge · spot · eu-west-1b"
+                      },
+                      "cells": [
+                        {
+                          "kind": "none"
+                        },
+                        {
+                          "kind": "none"
+                        }
+                      ],
+                      "rest": {
+                        "from": 0,
+                        "text": "Launching",
+                        "time": "2026-10-12T10:02:00Z"
+                      },
+                      "opens": "t8",
+                      "group": "default"
+                    },
+                    {
+                      "key": "t13",
+                      "lead": {
+                        "level": "healthy",
+                        "name": "ip-10-0-23-45.eu-west-1.compute.internal",
+                        "under": "g5.2xlarge · on-demand · eu-west-1a"
+                      },
+                      "cells": [
+                        {
+                          "kind": "none"
+                        },
+                        {
+                          "kind": "none"
+                        }
+                      ],
+                      "rest": {
+                        "from": 0,
+                        "text": "Ready · 7.9 cores"
+                      },
+                      "opens": "t13",
+                      "group": "gpu"
+                    }
+                  ],
+                  "shows": 6
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "part": "Card",
+            "props": {
+              "title": "Node mix"
+            },
+            "children": [
+              {
+                "part": "Counts",
+                "props": {
+                  "groups": [
+                    {
+                      "title": "Instance types",
+                      "code": true,
+                      "rows": [
+                        {
+                          "value": "m6i.2xlarge",
+                          "count": 2
+                        },
+                        {
+                          "value": "c6i.4xlarge",
+                          "count": 1
+                        },
+                        {
+                          "value": "g5.2xlarge",
+                          "count": 1
+                        }
+                      ]
+                    },
+                    {
+                      "title": "Capacity types",
+                      "rows": [
+                        {
+                          "value": "spot",
+                          "count": 2
+                        },
+                        {
+                          "value": "on-demand",
+                          "count": 2
+                        }
+                      ]
+                    },
+                    {
+                      "title": "Zones",
+                      "rows": [
+                        {
+                          "value": "eu-west-1a",
+                          "count": 2
+                        },
+                        {
+                          "value": "eu-west-1b",
+                          "count": 1
+                        },
+                        {
+                          "value": "eu-west-1c",
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "part": "Pair",
+        "props": {
+          "first": "wider"
+        },
+        "children": [
+          {
+            "part": "Card",
+            "props": {
+              "title": "Disruption"
+            },
+            "children": [
+              {
+                "part": "Table",
+                "props": {
+                  "title": "Disruption",
+                  "headings": false,
+                  "columns": [
+                    {
+                      "name": "Status",
+                      "kind": "status"
+                    },
+                    {
+                      "name": "Since",
+                      "kind": "age",
+                      "width": "text"
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "t5",
+                      "lead": {
+                        "name": "ip-10-0-45-67.eu-west-1.compute.internal",
+                        "under": "default · Its pods fit elsewhere, or on a cheaper node."
+                      },
+                      "cells": [
+                        {
+                          "kind": "status",
+                          "level": "neutral",
+                          "word": "Consolidatable"
+                        },
+                        {
+                          "kind": "age",
+                          "time": "2026-10-12T09:15:00Z"
+                        }
+                      ],
+                      "opens": "t5"
+                    },
+                    {
+                      "key": "t6",
+                      "lead": {
+                        "name": "ip-10-0-78-90.eu-west-1.compute.internal",
+                        "under": "default"
+                      },
+                      "cells": [
+                        {
+                          "kind": "status",
+                          "level": "progressing",
+                          "word": "Being replaced"
+                        },
+                        {
+                          "kind": "age",
+                          "time": "2026-10-12T09:40:00Z"
+                        }
+                      ],
+                      "opens": "t6"
+                    },
+                    {
+                      "key": "t7",
+                      "lead": {
+                        "name": "ip-10-0-23-45.eu-west-1.compute.internal",
+                        "under": "gpu"
+                      },
+                      "cells": [
+                        {
+                          "kind": "status",
+                          "level": "warning",
+                          "word": "Drifted"
+                        },
+                        {
+                          "kind": "age",
+                          "time": "2026-10-12T07:45:00Z"
+                        }
+                      ],
+                      "opens": "t7"
+                    },
+                    {
+                      "key": "t9",
+                      "lead": {
+                        "name": "ip-10-0-90-12.eu-west-1.compute.internal",
+                        "under": "default"
+                      },
+                      "cells": [
+                        {
+                          "kind": "status",
+                          "level": "progressing",
+                          "word": "Terminating"
+                        },
+                        {
+                          "kind": "age",
+                          "time": "2026-10-12T09:58:00Z"
+                        }
+                      ],
+                      "opens": "t9"
+                    }
+                  ],
+                  "shows": 6
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "part": "Card",
+            "props": {
+              "title": "Waiting for a node"
+            },
+            "children": [
+              {
+                "part": "Table",
+                "props": {
+                  "title": "Waiting for a node",
+                  "headings": false,
+                  "columns": [
+                    {
+                      "name": "Waiting",
+                      "kind": "age",
+                      "width": "text"
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "t15",
+                      "lead": {
+                        "level": "warning",
+                        "name": "train-5f8c9d-x2kqv",
+                        "beside": "ml"
+                      },
+                      "cells": [
+                        {
+                          "kind": "age",
+                          "time": "2026-10-12T09:52:00Z"
+                        }
+                      ],
+                      "note": "0/5 nodes are available: 1 Insufficient nvidia.com/gpu, 4 node(s) didn't match Pod's node affinity/selector. preemption: 0/5 nodes are available: 5 Preemption is not helpful for scheduling.",
+                      "opens": "t15"
+                    },
+                    {
+                      "key": "t16",
+                      "lead": {
+                        "level": "warning",
+                        "name": "nightly-report-29342880-m4d7r",
+                        "beside": "reports"
+                      },
+                      "cells": [
+                        {
+                          "kind": "age",
+                          "time": "2026-10-12T09:00:00Z"
+                        }
+                      ],
+                      "note": "0/5 nodes are available: 5 node(s) didn't match Pod's node affinity/selector. preemption: 0/5 nodes are available: 5 Preemption is not helpful for scheduling.",
+                      "opens": "t16"
+                    }
+                  ],
+                  "shows": 6
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

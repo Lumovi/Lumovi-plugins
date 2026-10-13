@@ -1,8 +1,10 @@
 /**
  * What a pull request changes in what the plugins ask for, as Lumovi reads their files before and
  * after: a line for each change. A change to what a plugin's code reads, the Secrets its pages
- * show, its actions or its pages is a line of its own, and so is a change to what code may be
- * built from (allowlist.json). Lumovi's maintainer agrees to each before it's merged.
+ * show, its actions, its pages, the places of Lumovi's own its pages link to, the containers' logs
+ * they show or its code reads, or its tool's own server is a line of its own, and so is a change
+ * to what code may be built from (allowlist.json). Lumovi's maintainer agrees to each before it's
+ * merged.
  * Written into the run's summary, where a reviewer reads it; it fails nothing, since agreeing is
  * a person's.
  */
@@ -37,7 +39,18 @@ export const spellWith = (spelled) => void (spell = spelled)
  */
 const AGREED_UNSEEN = /[\u00AD\u061C\u200B-\u200F\u2060-\u2064\uFEFF]/g
 
-/** Of a plugin, as Lumovi reads its file: the four things each changed alone, and the rest. */
+/** Its tool's own server, as its file says it: the Service, where it's looked for, its port, each path. */
+function serverSaid({ service, in: within, port, paths }) {
+  const which =
+    'name' in service
+      ? `the Service ${plain(service.name)}`
+      : `the Service labelled ${Object.entries(service.labels)
+          .map(([key, value]) => `${plain(key)}=${plain(value)}`)
+          .join(', ')}`
+  return `${which}, port ${plain(port)}, in the namespace of a ${plain(within)} (${paths.map(plain).join(', ')})`
+}
+
+/** Of a plugin, as Lumovi reads its file: the things each changed alone, and the rest. */
 function said(plugin, asks) {
   const { reads, secrets, actions, ...rest } = asks
   const each = (items) => items.map(plain).join(', ')
@@ -55,16 +68,31 @@ function said(plugin, asks) {
       ...plugin.added.tabs.map(({ id, kinds }) => `tab ${plain(id)} (${each(kinds)})`),
       ...plugin.added.commands.map(({ name, page }) => `command “${plain(name)}” (${plain(page)})`),
     ],
+    // Where its pages reach past reading objects: Lumovi's own Logs, Shell and Port forward, by a
+    // link; containers' logs, shown by Lumovi or read by its code; and its tool's own server.
+    links: (plugin.links ?? []).map(plain),
+    logs:
+      plugin.logs === 'read'
+        ? ['read by its code']
+        : plugin.logs === 'shown'
+          ? ['shown by Lumovi, never handed to its code']
+          : plugin.logs === undefined
+            ? []
+            : [plain(plugin.logs)],
+    server: plugin.server ? [serverSaid(plugin.server)] : [],
     rest: JSON.stringify(rest),
   }
 }
 
-/** The four, as a line names each. */
+/** Each, as a line names it. */
 const NAMED = {
   reads: 'what its code reads',
   secrets: 'the Secrets its pages show',
   actions: 'its actions',
   pages: 'its pages, tabs and commands',
+  links: 'the places of Lumovi’s own its pages link to',
+  logs: 'containers’ logs',
+  server: 'its tool’s own server, asked through Lumovi',
 }
 
 const listed = (items) => (items.length === 0 ? 'nothing' : items.join('; '))

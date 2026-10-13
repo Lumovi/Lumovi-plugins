@@ -3,8 +3,8 @@ import { test } from 'node:test'
 import { allowlistChanges, asksChanges, changesSummary, plain, proposalsChanges, spellWith } from './changes.mjs'
 
 /** A plugin as Lumovi reads it, with what it asks for: only what the summary looks at. */
-const read = ({ reads = {}, showsSecrets = [], actions = [], pages = [], kinds = ['NodePool.karpenter.sh'] } = {}) => ({
-  plugin: { reads, showsSecrets, added: { pages, tabs: [], commands: [] } },
+const read = ({ reads = {}, showsSecrets = [], actions = [], pages = [], kinds = ['NodePool.karpenter.sh'], reach = {} } = {}) => ({
+  plugin: { reads, showsSecrets, added: { pages, tabs: [], commands: [] }, links: [], ...reach },
   asks: { kinds, groups: ['karpenter.sh'], actions, reads: [], secrets: [] },
 })
 const node = { fields: [{ path: 'metadata.name' }], status: true, events: false, usage: true }
@@ -28,6 +28,39 @@ test('a change to what a plugin reads, shows, does or adds is a line of its own'
   assert.deepEqual(asksChanges('karpenter', before, read({ kinds: ['NodePool.karpenter.sh', 'NodeClaim.karpenter.sh'] })), [
     '**karpenter:** what else it asks for changes (its kinds, what it shows or links to).',
   ])
+})
+
+test('where a plugin’s pages reach, each a line of its own: Lumovi’s places it links to, containers’ logs, its tool’s server', () => {
+  const linked = read({ reach: { links: ['logs', 'shell', 'port-forward'], logs: 'shown' } })
+  assert.deepEqual(asksChanges('cloudnative-pg', read(), linked), [
+    '**cloudnative-pg: the places of Lumovi’s own its pages link to** changes. Before: nothing. Now: logs; shell; port-forward.',
+    '**cloudnative-pg: containers’ logs** changes. Before: nothing. Now: shown by Lumovi, never handed to its code.',
+  ])
+  // Read by its code is another thing than shown, and says so.
+  assert.deepEqual(asksChanges('cloudnative-pg', linked, read({ reach: { links: ['logs'], logs: 'read' } })), [
+    '**cloudnative-pg: the places of Lumovi’s own its pages link to** changes. Before: logs; shell; port-forward. Now: logs.',
+    '**cloudnative-pg: containers’ logs** changes. Before: shown by Lumovi, never handed to its code. Now: read by its code.',
+  ])
+  // Its tool's server: which Service, where it's looked for, its port and every path.
+  const byName = {
+    service: { name: 'prometheus-operated' },
+    in: 'Prometheus.monitoring.coreos.com',
+    port: 'web',
+    paths: ['/api/v1/targets?state=active'],
+  }
+  assert.deepEqual(asksChanges('prometheus-operator', read(), read({ reach: { server: byName } })), [
+    '**prometheus-operator: its tool’s own server, asked through Lumovi** changes. Before: nothing. Now: the Service prometheus-operated, port web, in the namespace of a Prometheus.monitoring.coreos.com (/api/v1/targets?state=active).',
+  ])
+  const byLabels = { ...byName, service: { labels: { 'app.kubernetes.io/name': 'toys' } }, port: 8080, paths: ['/a', '/b/{toy}'] }
+  assert.deepEqual(asksChanges('toys', read({ reach: { server: byName } }), read({ reach: { server: byLabels } })), [
+    '**toys: its tool’s own server, asked through Lumovi** changes. Before: the Service prometheus-operated, port web, in the namespace of a Prometheus.monitoring.coreos.com (/api/v1/targets?state=active). Now: the Service labelled app.kubernetes.io/name=toys, port 8080, in the namespace of a Prometheus.monitoring.coreos.com (/a, /b/\\{toy\\}).',
+  ])
+  // A new plugin says each; none of them, nothing.
+  assert.deepEqual(asksChanges('tiny', undefined, read({ reach: { logs: 'read' } })), [
+    '**tiny** is new.',
+    '**tiny: containers’ logs:** read by its code.',
+  ])
+  assert.deepEqual(asksChanges('tiny', read(), read()), [])
 })
 
 test('a new plugin says what it asks for; one taken out says so', () => {

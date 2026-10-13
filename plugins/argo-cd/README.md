@@ -10,3 +10,7 @@ Its pages read only Argo CD's own kinds (Applications and AppProjects). From an 
 it proposes Sync (with a revision, prune and strategy), Refresh (normal or hard) and Delete. Each is
 shown in Lumovi's own dialog, with the change as the cluster would make it, and nothing changes
 until you confirm it there.
+
+A resource's row on the tab opens Lumovi's own list of its kind, showing only that resource, for
+Deployments, StatefulSets, DaemonSets, Services, ConfigMaps, Ingresses, Jobs and CronJobs. The list
+is Lumovi's, read as you; the plugin reads nothing of it.

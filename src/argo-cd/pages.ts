@@ -12,6 +12,7 @@ import {
   autoSync,
   conditionLevel,
   conditions,
+  deletesWhatItDeployed,
   destination,
   detail,
   failed,
@@ -38,6 +39,20 @@ export const APPLICATIONS = 'argoproj.io/Application'
 const ROWS = 6
 /** The most rows a Table takes: past them, the door stops a page. */
 const MOST = 5_000
+/**
+ * Kubernetes' own kinds a resource's row goes to Lumovi's list of, at its one object: those its
+ * file says its pages open (`spec.opens`), and no other.
+ */
+export const OPENS = new Set([
+  'apps/Deployment',
+  'apps/StatefulSet',
+  'apps/DaemonSet',
+  '/Service',
+  '/ConfigMap',
+  'networking.k8s.io/Ingress',
+  'batch/Job',
+  'batch/CronJob',
+])
 /** The levels a list is filtered to where something isn't well, as Lumovi's own list filters it. */
 const UNHEALTHY = ['critical', 'warning', 'progressing']
 
@@ -210,8 +225,10 @@ function tabTiles(object: Object_): Described {
         icon: 'git-merge',
         label: 'Sync',
         value: { kind: 'words', text: synced.word },
-        level: synced.level,
-        detail: `${inSync} of ${counted(all.length, 'resource')}`,
+        // (None yet: said so, never "0 of 0", and with no level, as there's nothing to be well.)
+        ...(all.length === 0
+          ? { detail: 'No resources yet' }
+          : { level: synced.level, detail: `${inSync} of ${counted(all.length, 'resource')}` }),
       },
       {
         key: 'revision',
@@ -224,7 +241,7 @@ function tabTiles(object: Object_): Described {
         key: 'last-synced',
         icon: 'timer',
         label: 'Last synced',
-        ...(last ? { value: { kind: 'time', time: last.time }, detail: last.how } : { detail: 'Never synced' }),
+        ...(last ? { value: { kind: 'time', time: last.time }, detail: last.how } : { value: { kind: 'words', text: 'Never' } }),
       },
       {
         key: 'auto-sync',
@@ -237,9 +254,24 @@ function tabTiles(object: Object_): Described {
   })
 }
 
+/**
+ * Where a resource's row goes: Lumovi's own list of its kind, at its one object, in its
+ * namespace. Not for a kind its file doesn't open, nor one that's missing from the cluster.
+ */
+function goesTo(resource: ReturnType<typeof resources>[number]) {
+  const list = `${resource.group}/${resource.kind}`
+  if (!OPENS.has(list) || !resource.namespace || resource.health?.word === 'Missing') return {}
+  return { goes: { list, name: resource.name, namespace: resource.namespace } }
+}
+
+/** Where a resource stands among the rest, worst first: one with no health after every level. */
+const rank = (resource: ReturnType<typeof resources>[number]) =>
+  resource.health ? HEALTH_ORDER[resource.health.level] : Object.keys(HEALTH_ORDER).length
+
 function resourcesCard(object: Object_): Described {
   const rows = resources(object)
-    .sort((a, b) => HEALTH_ORDER[a.health?.level ?? 'neutral'] - HEALTH_ORDER[b.health?.level ?? 'neutral'] || a.name.localeCompare(b.name))
+    // (Worst first; one with no health at all, last.)
+    .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
     .slice(0, MOST)
     .map((resource, i) => ({
       key: `r${i}`,
@@ -248,6 +280,7 @@ function resourcesCard(object: Object_): Described {
         name: resource.name,
         under: [resource.kind, resource.namespace].filter(Boolean).join(' · '),
       },
+      ...goesTo(resource),
       cells: [
         resource.sync ? { kind: 'status', level: resource.sync.level, word: resource.sync.word } : { kind: 'none' },
         resource.health ? { kind: 'status', level: resource.health.level, word: resource.health.word } : { kind: 'none' },
@@ -270,6 +303,17 @@ function resourcesCard(object: Object_): Described {
   )
 }
 
+/**
+ * A revision as a cell: a commit's first seven characters in fixed-width type, the whole in its
+ * tooltip; anything else (a tag, a branch) as it is.
+ */
+function revisionCell(revision: string) {
+  const short = shortRevision(revision)
+  return short === revision
+    ? { kind: 'text', text: revision }
+    : { kind: 'text', text: short, mono: true, full: revision }
+}
+
 function historyTable(object: Object_): Described {
   const rows = history(object)
     .slice(0, MOST)
@@ -277,13 +321,14 @@ function historyTable(object: Object_): Described {
       key: `h${entry.id}`,
       lead: { name: String(entry.id) },
       cells: [
-        { kind: 'text', text: shortRevision(entry.revision) },
+        revisionCell(entry.revision),
         { kind: 'text', text: entry.path },
         entry.deployed ? { kind: 'age', time: entry.deployed } : { kind: 'none' },
       ],
     }))
   return h('Table', {
     title: 'History',
+    leadHeading: 'ID',
     headings: true,
     columns: [
       { name: 'Revision', kind: 'text' },
@@ -352,11 +397,20 @@ export function tab(object: Object_, press: (button: Pressed) => void): Describe
       key: 'header',
       name: nameOf(object),
       status: { level, word, ...(reason ? { detail: reason } : {}) },
-      // (No Sync… while a sync runs: Argo CD takes none over it. The detail says it's running.)
+      // (Sync… is off while a sync runs: Argo CD takes none over it. Delete… says what else it
+      // deletes, where Argo CD's finalizer would.)
       buttons: [
-        { key: 'delete', name: 'Delete', changes: true, asks: true },
+        {
+          key: 'delete',
+          name: 'Delete',
+          changes: true,
+          asks: true,
+          ...(deletesWhatItDeployed(object)
+            ? { note: 'Deleting it also deletes what it deployed (it has Argo CD’s resources finalizer).' }
+            : {}),
+        },
         { key: 'refresh', name: 'Refresh', changes: true, asks: true },
-        ...(running(object) ? [] : [{ key: 'sync', name: 'Sync', changes: true, asks: true }]),
+        { key: 'sync', name: 'Sync', changes: true, asks: true, ...(running(object) ? { off: 'A sync is running.' } : {}) },
       ],
       onPress: ({ button }: { button: string }) => press(button as Pressed),
     }),
@@ -368,8 +422,8 @@ export function tab(object: Object_, press: (button: Pressed) => void): Describe
 
 /** The proposal a press makes: Sync and Refresh with what the person sets first, Delete with none. */
 export function propose(page: Page, pressed: Pressed, token: string, object: Object_): void {
-  // (Argo CD takes no sync over a running one: none is proposed while one runs, and the header's
-  // detail says it's running.)
+  // (Argo CD takes no sync over a running one: none is proposed while one runs, its button is off
+  // and the header's detail says it's running.)
   if (pressed === 'sync' && running(object)) return
   if (pressed === 'delete') {
     void page.propose({ action: 'delete', target: token })

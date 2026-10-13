@@ -24,6 +24,17 @@ spec:
     - { id: application, title: Argo CD, kinds: [{ group: argoproj.io, kind: Application }] }
   changes:
     - { group: argoproj.io, kind: Application, actions: [patch, delete] }
+  # Lumovi's own lists a resource's row on the tab goes to, at that one object: never read, never
+  # changed (src/argo-cd/pages.ts's OPENS, the same kinds).
+  opens:
+    - { group: apps, kind: Deployment }
+    - { group: apps, kind: StatefulSet }
+    - { group: apps, kind: DaemonSet }
+    - { group: "", kind: Service }
+    - { group: "", kind: ConfigMap }
+    - { group: networking.k8s.io, kind: Ingress }
+    - { group: batch, kind: Job }
+    - { group: batch, kind: CronJob }
   views:
     - name: argo-cd-applications
       kinds:

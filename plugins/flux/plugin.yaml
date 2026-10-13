@@ -4,7 +4,7 @@ kind: Plugin
 metadata:
   name: flux
 spec:
-  version: 1.0.0
+  version: 1.1.0
   needs:
     lumovi: 1.22.0
   groups:
@@ -26,6 +26,11 @@ spec:
       kinds:
         - { group: kustomize.toolkit.fluxcd.io, kind: Kustomization }
       icon: workflow
+      # What a Kustomization applied carries Flux's labels naming it.
+      manages:
+        - labels:
+            kustomize.toolkit.fluxcd.io/name: '{{ .metadata.name }}'
+            kustomize.toolkit.fluxcd.io/namespace: '{{ .metadata.namespace }}'
       columns:
         - { name: Revision, path: .status.lastAppliedRevision }
         - { name: Path, path: .spec.path }
@@ -91,6 +96,11 @@ spec:
       kinds:
         - { group: helm.toolkit.fluxcd.io, kind: HelmRelease }
       icon: package
+      # What a HelmRelease installed carries Flux's labels naming it.
+      manages:
+        - labels:
+            helm.toolkit.fluxcd.io/name: '{{ .metadata.name }}'
+            helm.toolkit.fluxcd.io/namespace: '{{ .metadata.namespace }}'
       columns:
         - { name: Chart, path: .spec.chart.spec.chart }
         - { name: Version, path: '.status.history[0].chartVersion' }

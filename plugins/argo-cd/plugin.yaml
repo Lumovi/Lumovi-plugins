@@ -4,7 +4,7 @@ kind: Plugin
 metadata:
   name: argo-cd
 spec:
-  version: 1.0.0
+  version: 1.1.0
   needs:
     lumovi: 1.22.0
   groups:
@@ -20,6 +20,14 @@ spec:
       kinds:
         - { group: argoproj.io, kind: Application }
       icon: git-branch
+      # What an Application tracks by annotation carries its tracking id: the Application's
+      # name (with its namespace where Applications live in any), then what it is and where.
+      # (Tracking by the app.kubernetes.io/instance label can't be told from any chart's own.)
+      manages:
+        - annotations:
+            argocd.argoproj.io/tracking-id: '{{ .metadata.name }}:{{ object.group }}/{{ object.kind }}:{{ object.namespace }}/{{ object.name }}'
+        - annotations:
+            argocd.argoproj.io/tracking-id: '{{ .metadata.namespace }}_{{ .metadata.name }}:{{ object.group }}/{{ object.kind }}:{{ object.namespace }}/{{ object.name }}'
       columns:
         - { name: Sync, path: .status.sync.status }
         - { name: Repository, path: .spec.source.repoURL }

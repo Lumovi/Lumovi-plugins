@@ -1,11 +1,11 @@
 /**
  * CloudNativePG's plugin: it reads its own kinds whole, and of pods only its instances (those
  * labelled cnpg.io/cluster) and of them only what its file names, and draws the page it was
- * opened on (pages.ts) again with each answer.
+ * opened on (pages.ts) again with each answer. A press of Back up now proposes a Backup.
  */
 import { plugin, type Page, type Read } from '../runtime/index.ts'
 import { LABELS } from './cluster.ts'
-import { backupsPage, clustersPage, type Reads } from './pages.ts'
+import { backUp, backupsPage, clustersPage, type Reads } from './pages.ts'
 
 plugin((page: Page) => {
   const opened = 'page' in page.opened ? page.opened.page : undefined
@@ -40,6 +40,7 @@ plugin((page: Page) => {
               draw()
             },
             retry,
+            (cluster) => backUp(page, cluster, reads),
           ),
     )
   /** Asks for one of its reads, keeps each answer, and draws again with it. */

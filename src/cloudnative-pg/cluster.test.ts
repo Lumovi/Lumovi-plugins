@@ -7,6 +7,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
+  backupMethodsOf,
   backupStatus,
   instancesOf,
   methodOf,
@@ -17,6 +18,7 @@ import {
   roleOf,
   scheduleWords,
   tookOf,
+  underWay,
   versionOf,
   written,
 } from './cluster.ts'
@@ -110,6 +112,85 @@ test('a backup: how it was made, its state, and how long it took once it’s don
   assert.equal(took('2026-10-13T09:00:00Z', '2026-10-13T09:00:45Z'), '45s')
   assert.equal(took('2026-10-13T09:00:00Z', '2026-10-13T10:02:00Z'), '1h 02m')
   assert.equal(took('2026-10-13T09:00:00Z'), undefined)
+})
+
+test('a backup still to be made or being made: by its phase; with none said yet, only while it could be starting', () => {
+  const now = Date.parse('2026-10-13T12:00:00Z')
+  const made = '2026-10-13T11:58:00Z'
+  const backup = (phase?: string, creationTimestamp = made) => ({
+    metadata: { creationTimestamp },
+    status: phase === undefined ? {} : { phase },
+  })
+  for (const making of ['pending', 'started', 'running', 'finalizing']) {
+    assert.equal(underWay(backup(making), now), true, making)
+    // (Its phase says so however long ago it was made.)
+    assert.equal(underWay(backup(making, '2026-10-01T00:00:00Z'), now), true, making)
+  }
+  for (const ended of ['completed', 'failed', 'walArchivingFailing', 'Running']) {
+    assert.equal(underWay(backup(ended), now), false, ended)
+  }
+  // None said yet: made in the last ten minutes, CloudNativePG may still be starting it; any longer
+  // ago, or made when nobody says, nobody is.
+  assert.equal(underWay(backup(undefined), now), true)
+  assert.equal(underWay(backup(''), now), true)
+  assert.equal(underWay(backup(undefined, '2026-10-13T11:50:01Z'), now), true)
+  assert.equal(underWay(backup(undefined, '2026-10-13T11:50:00Z'), now), false)
+  assert.equal(underWay(backup(undefined, 'yesterday'), now), false)
+  assert.equal(underWay({ status: {} }, now), false)
+})
+
+test('the ways a cluster can be backed up, as it’s set up: CloudNativePG’s own, then its WAL’s plugins', () => {
+  const cluster = (spec: object) => ({ metadata: { name: 'orders-db' }, spec })
+  const of = { name: 'orders-db' }
+  assert.deepEqual(backupMethodsOf(cluster({})), [])
+  assert.deepEqual(
+    backupMethodsOf(
+      cluster({
+        backup: { barmanObjectStore: { destinationPath: 's3://b' }, volumeSnapshot: { className: 'c' } },
+        plugins: [{ name: 'barman-cloud.cloudnative-pg.io', isWALArchiver: true }],
+      }),
+    ),
+    [
+      { label: 'Volume snapshot', spec: { cluster: of, method: 'volumeSnapshot' } },
+      { label: 'Barman object store', spec: { cluster: of, method: 'barmanObjectStore' } },
+      {
+        label: 'Plugin barman-cloud.cloudnative-pg.io',
+        spec: { cluster: of, method: 'plugin', pluginConfiguration: { name: 'barman-cloud.cloudnative-pg.io' } },
+      },
+    ],
+  )
+  // (Nothing where a method is written but empty of a shape; a plugin that doesn't archive its
+  // WAL, or is turned off, or has no name.)
+  assert.deepEqual(
+    backupMethodsOf(
+      cluster({
+        backup: { volumeSnapshot: null, barmanObjectStore: ['s3://b'] },
+        plugins: [
+          { name: 'metrics.example.com' },
+          { name: 'off.example.com', isWALArchiver: true, enabled: false },
+          { isWALArchiver: true },
+        ],
+      }),
+    ),
+    [],
+  )
+  // A plugin's name past what a choice says: cut in its middle, so two that differ only at their
+  // end still read apart; the dialog's object says it whole.
+  const long = (end: string) => `wal-archiver.${'a'.repeat(40)}.${end}.example.com`
+  const methods = backupMethodsOf(
+    cluster({
+      plugins: [
+        { name: long('east'), isWALArchiver: true },
+        { name: long('west'), isWALArchiver: true },
+      ],
+    }),
+  )
+  assert.deepEqual(
+    methods.map(({ label }) => label),
+    ['Plugin wal-archiver.…aa.east.example.com', 'Plugin wal-archiver.…aa.west.example.com'],
+  )
+  assert.ok(methods.every(({ label }) => label.length === 40))
+  assert.deepEqual(methods[0]!.spec.pluginConfiguration, { name: long('east') })
 })
 
 test('a schedule in words, where it’s a common one, at the operator’s time of day; else nothing', () => {

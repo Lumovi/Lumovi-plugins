@@ -7,8 +7,8 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import type { Described, Handed, Part } from '../runtime/index.ts'
-import { backupsPage, clustersPage, type Reads } from './pages.ts'
+import type { Described, Handed, Page, Part, ProposedChange } from '../runtime/index.ts'
+import { backUp, backupsPage, clustersPage, type Reads } from './pages.ts'
 
 const sample = JSON.parse(readFileSync(new URL('./sample.json', import.meta.url), 'utf8')) as {
   now: string
@@ -37,7 +37,7 @@ const named = (described: Described, part: string) => parts(described).filter((e
 const prop = <T>(part: Part, key: string) => part.props?.[key] as T
 
 test('the clusters, worst first; the first picked, with its instances, backups, schedules and poolers', () => {
-  const page = clustersPage(reads(), undefined, nothing, nothing)
+  const page = clustersPage(reads(), undefined, nothing, nothing, nothing)
   const [split] = named(page, 'Split')
   const list = prop<{ rows: { key: string; status: { word: string } }[]; picked: string }>(split!, 'list')
   assert.deepEqual(
@@ -71,7 +71,7 @@ test('the clusters, worst first; the first picked, with its instances, backups, 
 })
 
 test('picked by a person, another cluster; one with a schedule and a pooler only where it has them', () => {
-  const orders = clustersPage(reads(), 'shop/orders-db', nothing, nothing)
+  const orders = clustersPage(reads(), 'shop/orders-db', nothing, nothing, nothing)
   assert.equal(prop(named(orders, 'Header')[0]!, 'name'), 'orders-db')
   const tiles = prop<{ key: string; value?: { kind: string } }[]>(named(orders, 'Tiles')[0]!, 'tiles')
   assert.deepEqual(tiles.find((tile) => tile.key === 'backup')!.value, {
@@ -79,14 +79,14 @@ test('picked by a person, another cluster; one with a schedule and a pooler only
     time: '2026-10-13T09:04:12Z',
   })
   // sessions-db has neither: nothing below its backups.
-  const sessions = clustersPage(reads(), 'shop/sessions-db', nothing, nothing)
+  const sessions = clustersPage(reads(), 'shop/sessions-db', nothing, nothing, nothing)
   assert.equal(named(sessions, 'Pair').length, 0)
   assert.deepEqual(
     named(sessions, 'Card').map((card) => prop(card, 'title')),
     ['Instances', 'Backups'],
   )
   // A cluster no longer there: the list's first again.
-  const gone = clustersPage(reads(), 'shop/gone-db', nothing, nothing)
+  const gone = clustersPage(reads(), 'shop/gone-db', nothing, nothing, nothing)
   assert.equal(prop(named(gone, 'Header')[0]!, 'name'), 'reports-db')
 })
 
@@ -119,7 +119,7 @@ test('the Backups page: the last day counted, and every cluster’s backups wors
 
 test('a time the operator wrote that isn’t a moment: a tile says it as it’s written, a table’s age nothing', () => {
   // The sample's reports-db schedule says when it last ran in a way of its own.
-  const reports = clustersPage(reads(), 'analytics/reports-db', nothing, nothing)
+  const reports = clustersPage(reads(), 'analytics/reports-db', nothing, nothing, nothing)
   const schedules = named(reports, 'Table').find((table) => prop(table, 'title') === 'Schedules')!
   assert.deepEqual(prop<{ cells: unknown[] }[]>(schedules, 'rows')[0]!.cells, [
     { kind: 'none' },
@@ -143,7 +143,7 @@ test('a time the operator wrote that isn’t a moment: a tile says it as it’s 
     },
   }
   const tiles = prop<{ key: string; value?: unknown }[]>(
-    named(clustersPage(odd, 'shop/orders-db', nothing, nothing), 'Tiles')[0]!,
+    named(clustersPage(odd, 'shop/orders-db', nothing, nothing, nothing), 'Tiles')[0]!,
     'tiles',
   )
   assert.deepEqual(tiles.find((tile) => tile.key === 'backup')!.value, {
@@ -158,6 +158,110 @@ test('a time the operator wrote that isn’t a moment: a tile says it as it’s 
   assert.deepEqual([next.value, next.detail], [{ kind: 'time', time: '2026-10-14T02:00:00Z' }, 'reports-db'])
 })
 
+test('Back up now…: on the picked cluster’s header, off while a backup of it runs, while its backups are read, or where it has no way to be', () => {
+  const button = (reads: Reads, chosen: string) =>
+    prop<{ key: string; name: string; changes: boolean; asks: boolean; off?: string; note?: string }[]>(
+      named(clustersPage(reads, chosen, nothing, nothing, nothing), 'Header')[0]!,
+      'buttons',
+    )
+  assert.deepEqual(button(reads(), 'analytics/reports-db'), [
+    { key: 'backup', name: 'Back up now', changes: true, asks: true },
+  ])
+  // orders-db's backup of 12:00 is still running.
+  assert.equal(button(reads(), 'shop/orders-db')[0]!.off, 'A backup is running.')
+  // While its backups are read, nobody knows yet: off until they are. Where they can't be read, it
+  // can be pressed, saying so, and the cluster answers in Lumovi's dialog.
+  assert.equal(button({ ...reads(), backups: undefined }, 'shop/orders-db')[0]!.off, 'Checking its backups…')
+  const unlisted = button({ ...reads(), backups: { ended: 'You may not list backups in this cluster.' } }, 'shop/orders-db')[0]!
+  assert.deepEqual([unlisted.off, unlisted.note], [undefined, 'Couldn’t read its backups, so one may be running.'])
+  // (Nothing to note where they were read.)
+  assert.equal(button(reads(), 'analytics/reports-db')[0]!.note, undefined)
+  // A cluster set up with no way to back it up.
+  const unset = handed('postgresql.cnpg.io/Cluster').map((each) => ({
+    ...each,
+    object: { ...each.object, spec: { instances: 2 } },
+  }))
+  assert.equal(
+    button({ ...reads(), clusters: { objects: unset } }, 'analytics/reports-db')[0]!.off,
+    'This cluster has no backup method set up.',
+  )
+  // Pressed: the cluster shown is the one handed to the press.
+  const pressed: Handed[] = []
+  const page = clustersPage(reads(), 'shop/sessions-db', nothing, nothing, (cluster) => pressed.push(cluster))
+  ;(prop<() => void>(named(page, 'Header')[0]!, 'onPress'))()
+  assert.deepEqual(
+    pressed.map(({ token }) => token),
+    ['postgresql.cnpg.io/Cluster#2'],
+  )
+})
+
+test('Back up now… proposes a Backup in the cluster’s namespace, its method the person’s pick where there are several', () => {
+  const proposed: { change: ProposedChange; said?: object }[] = []
+  const page = {
+    propose: (change: ProposedChange, said?: object) => {
+      proposed.push({ change, ...(said ? { said } : {}) })
+      return Promise.resolve('applied' as const)
+    },
+  } as unknown as Page
+  const cluster = (name: string) =>
+    handed('postgresql.cnpg.io/Cluster').find(
+      ({ object }) => (object.metadata as { name: string }).name === name,
+    )!
+  // reports-db: one way, so no field.
+  backUp(page, cluster('reports-db'), reads())
+  // sessions-db: a volume snapshot or its WAL's plugin, the first to start with.
+  backUp(page, cluster('sessions-db'), reads())
+  // orders-db: its backup still runs, so nothing.
+  backUp(page, cluster('orders-db'), reads())
+  assert.deepEqual(proposed, [
+    {
+      change: {
+        action: 'create',
+        kind: 'postgresql.cnpg.io/Backup',
+        in: 'postgresql.cnpg.io/Cluster#1',
+        object: {
+          metadata: { generateName: 'reports-db-' },
+          spec: { cluster: { name: 'reports-db' }, method: 'volumeSnapshot' },
+        },
+      },
+      said: { verb: 'Back up now' },
+    },
+    {
+      change: {
+        action: 'create',
+        kind: 'postgresql.cnpg.io/Backup',
+        in: 'postgresql.cnpg.io/Cluster#2',
+        object: { metadata: { generateName: 'sessions-db-' }, spec: { field: 'method' } },
+      },
+      said: {
+        verb: 'Back up now',
+        fields: [
+          {
+            kind: 'choice',
+            key: 'method',
+            label: 'Method',
+            options: [
+              {
+                label: 'Volume snapshot',
+                value: { cluster: { name: 'sessions-db' }, method: 'volumeSnapshot' },
+              },
+              {
+                label: 'Plugin barman-cloud.cloudnative-pg.io',
+                value: {
+                  cluster: { name: 'sessions-db' },
+                  method: 'plugin',
+                  pluginConfiguration: { name: 'barman-cloud.cloudnative-pg.io' },
+                },
+              },
+            ],
+            value: 0,
+          },
+        ],
+      },
+    },
+  ])
+})
+
 test('what hasn’t been read yet is said as being read; what ended, in Lumovi’s words', () => {
   const none: Reads = {
     clusters: undefined,
@@ -166,7 +270,7 @@ test('what hasn’t been read yet is said as being read; what ended, in Lumovi�
     poolers: undefined,
     pods: undefined,
   }
-  const clusters = clustersPage(none, undefined, nothing, nothing)
+  const clusters = clustersPage(none, undefined, nothing, nothing, nothing)
   const list = prop<{ state: { is: string } }>(named(clusters, 'Split')[0]!, 'list')
   assert.equal(list.state.is, 'busy')
   const backups = backupsPage({ ...none, clusters: { objects: [] } }, NOW, nothing)

@@ -2,10 +2,13 @@
  * CloudNativePG's pages, described from what's been read. Clusters: every PostgreSQL cluster in a
  * list, worst first, and the one picked: how it is, its instances, its backups, its schedules and
  * poolers. Backups: every cluster's backups, by cluster, worst first, with what the last day
- * brought. Read-only: what it can do to a cluster comes later.
+ * brought. Of the picked cluster, Back up now…: a Backup Lumovi shows and the person confirms in
+ * Lumovi's own dialog. (Its switchover writes the cluster's status, which a page can't: it stays
+ * Lumovi's own action, on its list of clusters.)
  */
-import { h, type Described, type Handed } from '../runtime/index.ts'
+import { field, h, type Described, type Field, type Handed, type Page } from '../runtime/index.ts'
 import {
+  backupMethodsOf,
   backupStatus,
   belongsTo,
   createdOf,
@@ -32,10 +35,12 @@ import {
   scheduleWords,
   startedOf,
   tookOf,
+  underWay,
   versionOf,
   worse,
   written,
   type Level,
+  type Object_,
 } from './cluster.ts'
 
 /** Rows of a table before "Show all", in each group alike. */
@@ -334,12 +339,78 @@ function scheduledAndPooled(cluster: Handed, reads: Reads): Described {
   return schedulesCard ?? poolersCard
 }
 
+/**
+ * Why a cluster can't be backed up now, if it can't: it has no way to be; its backups are still
+ * being read, so nobody knows yet whether one is being made; or one is. (Where its backups can't be
+ * read, it can be pressed, and says so: backUpNote.)
+ */
+export function backUpOff(cluster: Object_, reads: Reads, now = Date.now()): string | undefined {
+  if (backupMethodsOf(cluster).length === 0) return 'This cluster has no backup method set up.'
+  if (reads.backups === undefined) return 'Checking its backups…'
+  const running = (objectsOf(reads.backups) ?? []).some(
+    ({ object }) => belongsTo(object, cluster) && underWay(object, now),
+  )
+  return running ? 'A backup is running.' : undefined
+}
+
+/**
+ * What the person pressing Back up now should know, where its page couldn't check: its backups
+ * couldn't be read. (Being let to create a backup isn't being let to list them, so it isn't off
+ * for that: the cluster says in Lumovi's dialog whether it takes another.)
+ */
+export function backUpNote(cluster: Object_, reads: Reads): string | undefined {
+  return backupMethodsOf(cluster).length > 0 && reads.backups && 'ended' in reads.backups
+    ? 'Couldn’t read its backups, so one may be running.'
+    : undefined
+}
+
+/**
+ * Back up now…: a Backup of the cluster, made in its namespace once the person confirms it in
+ * Lumovi's dialog. With more than one way it can be made, the person picks it there, the first
+ * as it's set up to start with.
+ */
+export function backUp(page: Page, cluster: Handed, reads: Reads): void {
+  if (backUpOff(cluster.object, reads)) return
+  const methods = backupMethodsOf(cluster.object)
+  const fields: Field[] =
+    methods.length > 1
+      ? [
+          {
+            kind: 'choice',
+            key: 'method',
+            label: 'Method',
+            options: methods.map(({ label, spec }) => ({ label, value: spec })),
+            value: 0,
+          },
+        ]
+      : []
+  void page.propose(
+    {
+      action: 'create',
+      kind: 'postgresql.cnpg.io/Backup',
+      in: cluster.token,
+      object: {
+        metadata: { generateName: `${nameOf(cluster.object)}-` },
+        spec: fields.length ? field('method') : methods[0]!.spec,
+      },
+    },
+    { verb: 'Back up now', ...(fields.length ? { fields } : {}) },
+  )
+}
+
 /** What's picked: how it is, its instances, its backups, its schedules and poolers. */
-function picked(cluster: Handed | undefined, reads: Reads, retry: () => void): Described {
+function picked(
+  cluster: Handed | undefined,
+  reads: Reads,
+  retry: () => void,
+  press: (cluster: Handed) => void,
+): Described {
   if (!cluster) return h('Stack', { key: 'picked' })
   const { object } = cluster
   const phase = phaseOf(object)
   const reason = reasonOf(object)
+  const off = backUpOff(object, reads)
+  const note = backUpNote(object, reads)
   return h(
     'Stack',
     { key: 'picked' },
@@ -348,6 +419,17 @@ function picked(cluster: Handed | undefined, reads: Reads, retry: () => void): D
       name: nameOf(object),
       // (Why it's in its phase, under its word: where someone on its page looks for why.)
       status: { level: phase.level, word: phase.word, ...(reason ? { detail: reason } : {}) },
+      buttons: [
+        {
+          key: 'backup',
+          name: 'Back up now',
+          changes: true,
+          asks: true,
+          ...(off ? { off } : {}),
+          ...(note ? { note } : {}),
+        },
+      ],
+      onPress: () => press(cluster),
     }),
     clusterTiles(cluster, reads),
     instancesCard(cluster, reads, retry),
@@ -362,6 +444,7 @@ export function clustersPage(
   chosen: string | undefined,
   pick: (key: string) => void,
   retry: () => void,
+  press: (cluster: Handed) => void,
 ): Described {
   const clusters = objectsOf(reads.clusters)
   const rows = ordered(clusters ?? []).slice(0, MOST)
@@ -404,7 +487,7 @@ export function clustersPage(
       },
       onPick: ({ row }: { row: string }) => pick(row),
     },
-    picked(shown?.cluster, reads, retry),
+    picked(shown?.cluster, reads, retry, press),
   )
 }
 

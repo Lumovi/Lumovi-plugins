@@ -72,8 +72,16 @@ async function opened(opening: Opened = { page: 'overview' }) {
   const ready = Promise.resolve(box)
   plugin((page) => started.push(page), ready)
   await ready
-  const hear = (message: object | string) =>
+  const hear = (message: object | string) => {
+    // (Lumovi's page counts what it answers, as the door does: an answer once is over, an end ends.)
+    if (typeof message === 'object' && typeof (message as { read?: unknown }).read === 'number') {
+      const said = message as { read: number; json?: unknown; ended?: unknown; objects?: unknown }
+      if (Object.hasOwn(said, 'json')) counted.over(said.read)
+      else if (typeof said.ended === 'string') counted.refused(said.read)
+      else if (Array.isArray(said.objects)) counted.answered(said.read)
+    }
     heard!(typeof message === 'string' ? message : JSON.stringify(message))
+  }
   hear({ open: opening })
   assert.equal(started.length, 1)
   return { page: started[0]!, door, commits, asks, proposed, hear }
@@ -278,6 +286,35 @@ test('each ask is one Lumovi reads, under a new number, and each answer goes to 
   )
   hear({ read: 1, objects: found })
   assert.equal(heard.length, 8)
+})
+
+test('an ask of its tool’s server goes once, by tokens, and its answer is the JSON it answered', async () => {
+  const { page, asks, hear } = await opened()
+  const heard: unknown[] = []
+  page
+    .server('tok-1', '/api/v1/targets')
+    .answered((json) => heard.push(['targets', json]))
+    .ended((refused, said) => heard.push(['ended', refused, said]))
+  page
+    .server('tok-1', '/api/v1/widgets/{widget}', { widget: 'tok-2' })
+    .answered((json) => heard.push(['widget', json]))
+    .ended((refused, said) => heard.push(['ended', refused, said]))
+  hear({ read: 1, json: { status: 'success', data: { activeTargets: [] } } })
+  hear({ read: 2, ended: 'not-listed', said: 'This plugin’s file doesn’t list that path.' })
+  // (Two at most wait for an answer, by the door's count; and a fill of nothing is no fill.)
+  page.server('tok-1', '/status', {})
+  assert.deepEqual(asks, [
+    { read: 1, what: 'server', in: 'tok-1', path: '/api/v1/targets' },
+    { read: 2, what: 'server', in: 'tok-1', path: '/api/v1/widgets/{widget}', with: { widget: 'tok-2' } },
+    { read: 3, what: 'server', in: 'tok-1', path: '/status' },
+  ])
+  // Answered once: anything after is no one's.
+  hear({ read: 1, json: { again: true } })
+  hear({ read: 3, json: null })
+  assert.deepEqual(heard, [
+    ['targets', { status: 'success', data: { activeTargets: [] } }],
+    ['ended', 'not-listed', 'This plugin’s file doesn’t list that path.'],
+  ])
 })
 
 test('what Lumovi says first starts the page once; what isn’t a message is nothing', async () => {

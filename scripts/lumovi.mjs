@@ -61,6 +61,7 @@ export function lumoviDoor(checkout) {
     "export { callOf, swapFor, Tokens } from './src/shared/plugin-presses.ts'",
     "export { ownKinds } from './src/shared/plugins.ts'",
     "export { PLUGIN_SINCE } from './src/shared/plugin-since.ts'",
+    "export { filled, serverSaid } from './src/shared/plugin-server.ts'",
   ])
 }
 

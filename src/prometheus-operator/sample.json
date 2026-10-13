@@ -1,0 +1,73 @@
+{
+  "now": "2026-10-13T12:00:00Z",
+  "opens": { "page": "targets" },
+  "objects": {
+    "monitoring.coreos.com/Prometheus": [
+      {
+        "apiVersion": "monitoring.coreos.com/v1",
+        "kind": "Prometheus",
+        "metadata": { "name": "k8s", "namespace": "monitoring", "creationTimestamp": "2026-08-01T09:00:00Z" },
+        "spec": { "replicas": 2, "version": "v3.5.0" }
+      },
+      {
+        "apiVersion": "monitoring.coreos.com/v1",
+        "kind": "Prometheus",
+        "metadata": { "name": "team-a", "namespace": "team-a", "creationTimestamp": "2026-09-14T09:00:00Z" },
+        "spec": { "replicas": 1 }
+      }
+    ]
+  },
+  "servers": {
+    "monitoring/api/v1/targets?state=active": {
+      "json": {
+        "status": "success",
+        "data": {
+          "activeTargets": [
+            {
+              "labels": { "instance": "10.0.1.5:9100", "job": "node-exporter" },
+              "scrapePool": "serviceMonitor/monitoring/node-exporter/0",
+              "scrapeUrl": "http://10.0.1.5:9100/metrics",
+              "lastError": "",
+              "lastScrape": "2026-10-13T11:59:48Z",
+              "health": "up"
+            },
+            {
+              "labels": { "instance": "10.0.1.6:9100", "job": "node-exporter" },
+              "scrapePool": "serviceMonitor/monitoring/node-exporter/0",
+              "scrapeUrl": "http://10.0.1.6:9100/metrics",
+              "lastError": "",
+              "lastScrape": "2026-10-13T11:59:51Z",
+              "health": "up"
+            },
+            {
+              "labels": { "instance": "10.0.3.7:8080", "job": "storefront" },
+              "scrapePool": "serviceMonitor/shop/storefront/0",
+              "scrapeUrl": "http://10.0.3.7:8080/metrics",
+              "lastError": "Get \"http://10.0.3.7:8080/metrics\": context deadline exceeded",
+              "lastScrape": "2026-10-13T11:59:40Z",
+              "health": "down"
+            },
+            {
+              "labels": { "instance": "10.0.3.8:8080", "job": "storefront" },
+              "scrapePool": "serviceMonitor/shop/storefront/0",
+              "scrapeUrl": "http://10.0.3.8:8080/metrics",
+              "lastError": "",
+              "lastScrape": "2026-10-13T11:59:44Z",
+              "health": "up"
+            },
+            {
+              "labels": { "instance": "10.0.4.2:9090", "job": "cart" },
+              "scrapePool": "podMonitor/shop/cart/0",
+              "scrapeUrl": "http://10.0.4.2:9090/metrics",
+              "lastError": "",
+              "lastScrape": "0001-01-01T00:00:00Z",
+              "health": "unknown"
+            }
+          ],
+          "droppedTargets": []
+        }
+      }
+    },
+    "team-a/api/v1/targets?state=active": { "refused": "too-big" }
+  }
+}

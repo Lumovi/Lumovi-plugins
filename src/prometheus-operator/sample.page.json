@@ -1,0 +1,358 @@
+[
+  {
+    "part": "Stack",
+    "props": {},
+    "children": [
+      {
+        "part": "Header",
+        "props": {
+          "name": "Target health",
+          "buttons": [
+            {
+              "key": "again",
+              "name": "Ask again"
+            }
+          ],
+          "onPress": "h1"
+        },
+        "children": []
+      },
+      {
+        "part": "Tiles",
+        "props": {
+          "tiles": [
+            {
+              "key": "up",
+              "icon": "activity",
+              "label": "Up",
+              "value": {
+                "kind": "figure",
+                "text": "3"
+              },
+              "level": "healthy",
+              "detail": "of 5 targets"
+            },
+            {
+              "key": "down",
+              "icon": "flame",
+              "label": "Down",
+              "value": {
+                "kind": "figure",
+                "text": "1"
+              },
+              "level": "critical",
+              "detail": "of 5 targets"
+            },
+            {
+              "key": "unknown",
+              "icon": "radar",
+              "label": "Unknown",
+              "value": {
+                "kind": "figure",
+                "text": "1"
+              },
+              "level": "neutral",
+              "detail": "not scraped yet"
+            }
+          ]
+        },
+        "children": []
+      },
+      {
+        "part": "Card",
+        "props": {
+          "title": "Down",
+          "note": "1"
+        },
+        "children": [
+          {
+            "part": "Table",
+            "props": {
+              "title": "Targets that are down",
+              "headings": true,
+              "leadHeading": "Target",
+              "columns": [
+                {
+                  "name": "Last scraped",
+                  "kind": "age",
+                  "width": "text"
+                }
+              ],
+              "rows": [
+                {
+                  "key": "monitoring/serviceMonitor/shop/storefront/0/10.0.3.7:8080",
+                  "lead": {
+                    "level": "critical",
+                    "name": "10.0.3.7:8080",
+                    "beside": "storefront · ServiceMonitor · shop · Prometheus k8s",
+                    "under": "Get \"http://10.0.3.7:8080/metrics\": context deadline exceeded"
+                  },
+                  "cells": [
+                    {
+                      "kind": "age",
+                      "time": "2026-10-13T11:59:40Z"
+                    }
+                  ]
+                }
+              ]
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "part": "Card",
+        "props": {
+          "title": "Prometheus k8s",
+          "note": "in monitoring"
+        },
+        "children": [
+          {
+            "part": "Table",
+            "props": {
+              "title": "Scrape pools of k8s",
+              "headings": true,
+              "leadHeading": "Pool",
+              "columns": [
+                {
+                  "name": "Up",
+                  "kind": "number",
+                  "width": "narrow"
+                },
+                {
+                  "name": "Down",
+                  "kind": "number",
+                  "width": "narrow"
+                },
+                {
+                  "name": "Last scraped",
+                  "kind": "age",
+                  "width": "text"
+                }
+              ],
+              "rows": [
+                {
+                  "key": "serviceMonitor/shop/storefront/0",
+                  "lead": {
+                    "level": "warning",
+                    "name": "storefront",
+                    "beside": "ServiceMonitor · shop"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-13T11:59:40Z"
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "10.0.3.7:8080",
+                      "lead": {
+                        "level": "critical",
+                        "name": "10.0.3.7:8080",
+                        "beside": "Down",
+                        "under": "Get \"http://10.0.3.7:8080/metrics\": context deadline exceeded"
+                      },
+                      "cells": [
+                        {
+                          "kind": "none"
+                        },
+                        {
+                          "kind": "none"
+                        },
+                        {
+                          "kind": "age",
+                          "time": "2026-10-13T11:59:40Z"
+                        }
+                      ]
+                    },
+                    {
+                      "key": "10.0.3.8:8080",
+                      "lead": {
+                        "level": "healthy",
+                        "name": "10.0.3.8:8080",
+                        "beside": "Up"
+                      },
+                      "cells": [
+                        {
+                          "kind": "none"
+                        },
+                        {
+                          "kind": "none"
+                        },
+                        {
+                          "kind": "age",
+                          "time": "2026-10-13T11:59:44Z"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "key": "podMonitor/shop/cart/0",
+                  "lead": {
+                    "level": "neutral",
+                    "name": "cart",
+                    "beside": "PodMonitor · shop",
+                    "under": "1 target not scraped yet"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "none"
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "10.0.4.2:9090",
+                      "lead": {
+                        "level": "neutral",
+                        "name": "10.0.4.2:9090",
+                        "beside": "Unknown"
+                      },
+                      "cells": [
+                        {
+                          "kind": "none"
+                        },
+                        {
+                          "kind": "none"
+                        },
+                        {
+                          "kind": "none"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "key": "serviceMonitor/monitoring/node-exporter/0",
+                  "lead": {
+                    "level": "healthy",
+                    "name": "node-exporter",
+                    "beside": "ServiceMonitor · monitoring"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 2
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-13T11:59:48Z"
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "10.0.1.5:9100",
+                      "lead": {
+                        "level": "healthy",
+                        "name": "10.0.1.5:9100",
+                        "beside": "Up"
+                      },
+                      "cells": [
+                        {
+                          "kind": "none"
+                        },
+                        {
+                          "kind": "none"
+                        },
+                        {
+                          "kind": "age",
+                          "time": "2026-10-13T11:59:48Z"
+                        }
+                      ]
+                    },
+                    {
+                      "key": "10.0.1.6:9100",
+                      "lead": {
+                        "level": "healthy",
+                        "name": "10.0.1.6:9100",
+                        "beside": "Up"
+                      },
+                      "cells": [
+                        {
+                          "kind": "none"
+                        },
+                        {
+                          "kind": "none"
+                        },
+                        {
+                          "kind": "age",
+                          "time": "2026-10-13T11:59:51Z"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "shows": 8
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "part": "Card",
+        "props": {
+          "title": "Prometheus team-a",
+          "note": "in team-a"
+        },
+        "children": [
+          {
+            "part": "Table",
+            "props": {
+              "title": "Scrape pools of team-a",
+              "headings": true,
+              "leadHeading": "Pool",
+              "columns": [
+                {
+                  "name": "Up",
+                  "kind": "number",
+                  "width": "narrow"
+                },
+                {
+                  "name": "Down",
+                  "kind": "number",
+                  "width": "narrow"
+                },
+                {
+                  "name": "Last scraped",
+                  "kind": "age",
+                  "width": "text"
+                }
+              ],
+              "rows": [],
+              "shows": 8,
+              "state": {
+                "is": "failed",
+                "title": "Couldn’t ask its server",
+                "said": "prometheus-operated answered with more than 1 MiB."
+              },
+              "onRetry": "h2"
+            },
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+]

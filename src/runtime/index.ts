@@ -98,6 +98,14 @@ export interface Read {
   stop(): void
 }
 
+/** An ask answered once: its tool's server's answer, as JSON. */
+export interface Asked {
+  /** What it answered, as JSON. */
+  answered(hear: (json: unknown) => void): Asked
+  /** No answer: why, as a code, and Lumovi's words. */
+  ended(hear: (refused: string, said: string) => void): Asked
+}
+
 /** Where a field's value goes in a proposed change: `field('revision')` in place of a value. */
 export const field = (key: string): { field: string } => ({ field: key })
 
@@ -134,6 +142,12 @@ export interface Page {
   events(token: string): Read
   /** Asks every list read again now (a person's "refresh"). */
   refresh(): void
+  /**
+   * Asks its tool's own server, once, for a path its file lists (`spec.server`): in the namespace
+   * of an object of its file's `in` kind a read brought (`within`, its token), each `{name}`
+   * segment filled with the name of an object a read brought (`fills`, by name, its token).
+   */
+  server(within: string, path: string, fills?: Readonly<Record<string, string>>): Asked
   /**
    * Proposes a change, from a handler of a press: Lumovi shows it in its own dialog, with the
    * fields asked for, and makes it only once the person confirms. What became of it, once it has.
@@ -356,11 +370,17 @@ function run(box: Box, start: (page: Page) => void): void {
     if (steps.length > 0) send(steps)
   }
 
-  const read = (said: object): Read => {
+  /** Asks, under a new number: what's heard of it. */
+  const asking = (said: object) => {
     const number = nextRead++
-    const hearing: Hearing = { answered: [], ended: [], failing: [] }
+    const hearing: Hearing = { answered: [], json: [], ended: [], failing: [] }
     reads.set(number, hearing)
     ask({ read: number, ...said })
+    return { number, hearing }
+  }
+
+  const read = (said: object): Read => {
+    const { number, hearing } = asking(said)
     const handle: Read = {
       answered: (hear) => (hearing.answered.push(hear), handle),
       ended: (hear) => (hearing.ended.push(hear), handle),
@@ -393,6 +413,19 @@ function run(box: Box, start: (page: Page) => void): void {
           read({ what: 'object', kind, ...within(namespace), name, ...asked(reading) }),
         events: (token) => read({ what: 'events', of: token }),
         refresh: () => ask({ refresh: true }),
+        server: (within, path, fills) => {
+          const { hearing } = asking({
+            what: 'server',
+            in: within,
+            path,
+            ...(fills && Object.keys(fills).length > 0 ? { with: fills } : {}),
+          })
+          const handle: Asked = {
+            answered: (hear) => (hearing.json.push(hear), handle),
+            ended: (hear) => (hearing.ended.push(hear), handle),
+          }
+          return handle
+        },
         propose,
       }
       start(page)
@@ -413,7 +446,11 @@ function run(box: Box, start: (page: Page) => void): void {
     if (typeof said.read === 'number') {
       const hearing = reads.get(said.read)
       if (!hearing) return
-      if (Array.isArray(said.objects)) {
+      if (Object.hasOwn(said, 'json')) {
+        // (Answered once: the read is over.)
+        reads.delete(said.read)
+        for (const hear of hearing.json) hear(said.json)
+      } else if (Array.isArray(said.objects)) {
         const none = said.noUsage === 'unmeasured' || said.noUsage === 'not-allowed' ? said.noUsage : undefined
         const about: Answered = {
           ...(none ? { noUsage: none } : {}),
@@ -442,6 +479,7 @@ const picked = (reading: ListReading | undefined) => ({
 
 interface Hearing {
   answered: ((objects: readonly Handed[], said: Answered) => void)[]
+  json: ((json: unknown) => void)[]
   ended: ((refused: string, said: string) => void)[]
   failing: ((refused: string, said: string) => void)[]
 }

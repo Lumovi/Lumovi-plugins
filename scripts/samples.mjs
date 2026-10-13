@@ -284,6 +284,7 @@ async function runSample({ door, changes, plugin, code, sample }) {
     }
     // (Events come later, as they do in Lumovi.)
     if (ask.what === 'events') return refused('not-yet')
+    if (ask.what === 'server') return serverAnswer(ask)
     const kind = door.resolvedAs(door.kindAsked(ask.kind).group, door.kindAsked(ask.kind).kind)
     const handed = door.granted(grant, kind, 'objects')
     if (!handed) {
@@ -358,6 +359,72 @@ async function runSample({ door, changes, plugin, code, sample }) {
       ...(noUsage ? { noUsage } : {}),
       ...(cut === undefined ? {} : { cut }),
     }
+  }
+
+  /**
+   * Lumovi's answer to an ask of its tool's own server, as its backend makes it: of the Service its
+   * file names, in the namespace of an object of its `in` kind the page holds, for a path its file
+   * lists, filled with the names of objects of its own kinds it holds; then what the sample says
+   * that server answers there (`servers`, by namespace and path as asked: `{ "json" }`, or
+   * `{ "refused", "status"? }`).
+   */
+  const serverAnswer = (ask) => {
+    const server = plugin.server
+    const where = server && {
+      ...('name' in server.service ? { name: server.service.name } : { byLabels: true }),
+      port: server.port,
+    }
+    const ended = (code, also = {}) => {
+      counted.refused(ask.read)
+      return { read: ask.read, ended: code, said: door.serverSaid(code, { ...where, ...also }) }
+    }
+    if (!server) {
+      problems.push('it asks its tool’s server, and its file names none')
+      return ended('not-granted')
+    }
+    const within = tokens.heldOf(ask.in)
+    if (!within || within.kind !== server.in || within.namespace === undefined) {
+      problems.push(`it asks its server about an object that isn’t a ${server.in} its page holds`)
+      return ended('not-granted')
+    }
+    if (!server.paths.includes(ask.path)) {
+      problems.push(`it asks its server for ${ask.path}, which its file doesn’t list`)
+      return ended('not-listed', { namespace: within.namespace })
+    }
+    const own = new Set(door.ownKinds(plugin))
+    const names = {}
+    for (const [fill, token] of Object.entries(ask.with ?? {})) {
+      const object = tokens.heldOf(token)
+      if (!object || !own.has(groupKindOf(object.kind))) {
+        problems.push(`it fills ${ask.path} with an object that isn’t one of its own kinds it holds`)
+        return ended('not-granted', { namespace: within.namespace })
+      }
+      names[fill] = object.name
+    }
+    const path = door.filled(ask.path, names)
+    if (path === undefined) {
+      problems.push(`it fills ${ask.path} with names that aren’t each of its segments’`)
+      return ended('not-granted', { namespace: within.namespace })
+    }
+    const answers = sample.servers ?? {}
+    const at = `${within.namespace}${path}`
+    if (!Object.hasOwn(answers, at)) {
+      problems.push(`its sample’s servers has no answer for ${at}`)
+      return ended('failed', { namespace: within.namespace })
+    }
+    const answered = answers[at]
+    if (typeof answered?.refused === 'string') {
+      return ended(answered.refused, {
+        namespace: within.namespace,
+        ...(answered.status === undefined ? {} : { status: answered.status }),
+      })
+    }
+    if (!Object.hasOwn(answered ?? {}, 'json')) {
+      problems.push(`its sample’s servers.${at} should be { "json" } or { "refused", "status"? }`)
+      return ended('failed', { namespace: within.namespace })
+    }
+    counted.over(ask.read)
+    return { read: ask.read, json: answered.json }
   }
 
   // Presses a person makes, as the sample says, once its page is quiet: a part's event, with what
@@ -438,6 +505,7 @@ async function runSample({ door, changes, plugin, code, sample }) {
       const read = door.readAsk(ask)
       if ('why' in read) return end(`Lumovi’s door stopped it: ${read.what}`)
       for (const what of ['usage', 'fields', 'labels']) if (read[what] !== undefined) used.read.add(what)
+      if (read.what === 'server' || read.what === 'logs') used.read.add(read.what)
       const count = counted.take(read)
       if (typeof count === 'object') return end(`Lumovi’s door stopped it: ${count.what}`)
       if (count === 'too-soon' || 'refresh' in read) return
@@ -589,7 +657,19 @@ export function says(props, path) {
 /** The groups of PLUGIN_SINCE this check reads. */
 const SINCE_GROUPS = ['file', 'read', 'parts', 'kinds', 'props']
 /** The keys of a file this check reads a plugin's use of: another is said, never passed over. */
-const FILE_KEYS = ['pages', 'tabs', 'commands', 'reads', 'showsSecrets', 'manages', 'changes', 'opens']
+const FILE_KEYS = [
+  'pages',
+  'tabs',
+  'commands',
+  'reads',
+  'showsSecrets',
+  'manages',
+  'changes',
+  'opens',
+  'links',
+  'logs',
+  'server',
+]
 
 /** Whether version `a` is older than `b`: three numbers each. */
 function older(a, b) {
@@ -634,6 +714,9 @@ export function needsProblems({ plugin, used, since, version }) {
     ...((plugin.views ?? []).some((view) => view.manages) ? [['a view’s manages', since.file.manages]] : []),
     ...((plugin.changes ?? []).length > 0 ? [['its file’s changes', since.file.changes]] : []),
     ...((plugin.opens ?? []).length > 0 ? [['its file’s opens', since.file.opens]] : []),
+    ...((plugin.links ?? []).length > 0 ? [['its file’s links', since.file.links]] : []),
+    ...(plugin.logs !== undefined ? [['its file’s logs', since.file.logs]] : []),
+    ...(plugin.server !== undefined ? [['its file’s server', since.file.server]] : []),
     ...used.read.map((what) => [`a read’s ${what}`, since.read[what]]),
     ...used.parts.map((part) => [`the part ${part}`, since.parts[part]]),
     ...used.kinds.map((kind) => [`a ${kind}`, since.kinds[kind]]),

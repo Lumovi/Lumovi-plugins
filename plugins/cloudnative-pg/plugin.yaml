@@ -4,7 +4,7 @@ kind: Plugin
 metadata:
   name: cloudnative-pg
 spec:
-  version: 1.1.1
+  version: 1.2.0
   needs:
     lumovi: 1.22.0
   groups:
@@ -37,6 +37,12 @@ spec:
           status.conditions,
           status.containerStatuses.restartCount,
         ]
+  # Of a cluster's instances, its Overview links to Lumovi's own Logs and Shell tabs and its Port
+  # forward (PostgreSQL's port, 5432, of the primary): Lumovi opens each on the person's press, as
+  # the person, and its code starts nothing.
+  links: [logs, shell, port-forward]
+  # And it shows the primary's log: Lumovi reads it and draws it, and its code never holds a line.
+  logs: shown
   # From its Overview, Back up now… creates a Backup of the cluster picked, once the person
   # confirms it in Lumovi's own dialog. (Switch over writes a cluster's status, which a page can't:
   # it stays the view's action, below.)

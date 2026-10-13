@@ -1,0 +1,88 @@
+{
+  "opens": {
+    "page": "overview"
+  },
+  "objects": {
+    "/Pod": [
+      {
+        "metadata": {
+          "name": "api-7c9d4",
+          "namespace": "shop",
+          "labels": {
+            "app": "api"
+          }
+        },
+        "spec": {
+          "nodeName": "node-1",
+          "containers": [
+            {
+              "name": "api",
+              "image": "shop/api:1"
+            }
+          ]
+        },
+        "status": {
+          "phase": "Running",
+          "containerStatuses": [
+            {
+              "name": "api",
+              "ready": true,
+              "restartCount": 0
+            }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "web-5f2b8",
+          "namespace": "shop"
+        },
+        "spec": {
+          "nodeName": "node-2",
+          "containers": [
+            {
+              "name": "web",
+              "image": "shop/web:1"
+            },
+            {
+              "name": "proxy",
+              "image": "shop/proxy:1"
+            }
+          ]
+        },
+        "status": {
+          "phase": "Running",
+          "containerStatuses": [
+            {
+              "name": "web",
+              "ready": false,
+              "restartCount": 4
+            },
+            {
+              "name": "proxy",
+              "ready": true,
+              "restartCount": 1
+            }
+          ]
+        }
+      },
+      {
+        "metadata": {
+          "name": "reports-1",
+          "namespace": "data"
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "reports",
+              "image": "data/reports:1"
+            }
+          ]
+        },
+        "status": {
+          "phase": "Pending"
+        }
+      }
+    ]
+  }
+}

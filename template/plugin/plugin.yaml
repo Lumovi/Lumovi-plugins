@@ -1,0 +1,23 @@
+# My plugin: what it's for, in a line. (The start of a plugin of your own: template/README.md.)
+apiVersion: lumovi.dev/v1beta1
+kind: Plugin
+metadata:
+  name: my-plugin
+spec:
+  version: 0.1.0
+  needs:
+    lumovi: 1.22.0
+  # The API groups your kinds are in: your operator's (example.com stands in for it). Each kind
+  # you name is checked against its CRDs (crd-sources.json).
+  groups: [example.com]
+  label: My plugin
+  icon: puzzle
+  # Its page, drawn by its code (src/my-plugin/index.ts).
+  pages:
+    - { id: overview, title: Overview }
+  # What its code reads: your own kinds (in its groups), and of Kubernetes' own only Pods and
+  # Nodes, each only the fields named, and only those on Lumovi's list.
+  reads:
+    - group: ''
+      kind: Pod
+      fields: [metadata.name, metadata.namespace, status.phase, status.containerStatuses.restartCount]

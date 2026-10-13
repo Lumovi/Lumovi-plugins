@@ -18,6 +18,7 @@ npm run rules     # this repository's rules
 npm test          # the scripts' own tests
 npm run test:code # the runtime, and the sample run, against Lumovi's door
 npm run types     # the code's types
+npm run folder -- <plugin>  # one plugin with code, where Lumovi's Developer mode reads it
 ```
 
 Node is the version in `.nvmrc`.
@@ -34,13 +35,20 @@ Node is the version in `.nvmrc`.
 A folder in `plugins/`, named as the plugin is (lowercase letters, digits and hyphens), with its
 four files. Its `README.md` says what it's for, in a line.
 
+## A plugin of your own
+
+A plugin with code for your own tools, run by Lumovi's desktop app in Developer mode, starts from
+[`template/`](template/README.md): its README has the steps, and `npm run folder` puts it where
+Lumovi reads it.
+
 ## A plugin's pages, in code
 
 A plugin of Lumovi's own can add pages and tabs (its file's `pages` and `tabs`), drawn by code in
 `src/<plugin>/index.ts`. It's written with Lumovi's runtime for a page, `src/runtime`: it reads
 what its file grants (`page.list`, `page.object`), describes the page as Lumovi's parts
 (`h('Table', { … })`) and draws it (`page.draw`); the runtime sends Lumovi's door only what
-changed. Key an object's row by the token Lumovi handed it with the object.
+changed. Key an object's row by the token Lumovi handed it with the object. The parts, and what
+each one draws: [the kit reference](https://docs.lumovi.dev/reference/plugin-kit).
 
 - A list can be read picked by its objects' fields and labels, so a page reads what it shows and
   no more: `page.list('/Pod', undefined, { fields: { 'spec.nodeName': '' } })` reads the pods on

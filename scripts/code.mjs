@@ -187,9 +187,9 @@ export function foldersProblems(entries, plugins, allowlist) {
 /**
  * Every plugin's code, built and checked without being run: by name, its text and its file as
  * Lumovi reads it; or the run ends saying what's wrong. What a release carries is built so, and
- * nothing of a plugin's code runs where a release is made.
+ * nothing of a plugin's code runs where a release is made. With `only`, that plugin's alone.
  */
-export function builtCode(checkout, root = '.') {
+export function builtCode(checkout, root = '.', only = undefined) {
   const { plugins, problems } = readPlugins(join(root, 'plugins'))
   refuse(problems, 'The plugins’ folders')
   const allowlist = JSON.parse(readFileSync(join(root, 'allowlist.json'), 'utf8'))
@@ -207,7 +207,7 @@ export function builtCode(checkout, root = '.') {
   const reader = lumoviReader(checkout)
   const built = {}
   const wrong = []
-  for (const name of withCode(plugins, root)) {
+  for (const name of withCode(plugins, root).filter((name) => only === undefined || name === only)) {
     const entry = `${SOURCE}/${name}/${ENTRY}`
     const first = buildCode(esbuild, root, entry)
     const second = buildCode(esbuild, root, entry)

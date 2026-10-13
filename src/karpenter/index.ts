@@ -31,6 +31,13 @@ import {
 const ROWS = 6
 /** The most rows a Table takes, and values a group of counts: past them, the door stops a page. */
 const MOST = { rows: 5_000, counts: 50 }
+/**
+ * The most of the Nodes table: its rows while their text, as the door counts a message (JSON's
+ * characters), is within `characters`, and `most` at that. A Table's rows go in the one step that
+ * makes it, and the door stops a page that sends more than 1,048,576 characters at once: past about
+ * 3,200 nodes, this table alone did. This leaves room for what's drawn with it.
+ */
+const NODE_ROWS = { most: 2_500, characters: 800_000 }
 
 /**
  * What one read has given: nothing yet; its objects (and, of a list past Lumovi's limit, the
@@ -71,9 +78,12 @@ function unread(gots: readonly Got[], what: string, retry: () => void) {
 /** The levels a list is filtered to where something isn’t well, as Lumovi’s own page filtered it. */
 const UNHEALTHY = ['critical', 'warning']
 
+/** "3,412": a count as Lumovi writes one. */
+const figure = (count: number) => count.toLocaleString('en-US')
+
 /** "3 pods", or "5,000+ pods" of a cut read: Lumovi read the first, and there are more. */
 const countedOf = (count: number, noun: string, cut: string | undefined) =>
-  cut ? `${count.toLocaleString('en-US')}+ ${noun}s` : counted(count, noun)
+  cut ? `${figure(count)}+ ${noun}s` : counted(count, noun)
 
 function tiles(reads: Reads): Described {
   const pools = objectsOf(reads.pools)
@@ -275,6 +285,20 @@ function launchingRow({ token, object }: Handed) {
   }
 }
 
+/** Of `rows`, the first that fit the Nodes table's most (NODE_ROWS). */
+function fitting<Row>(rows: readonly Row[]): Row[] {
+  let characters = 0
+  let count = 0
+  for (const row of rows) {
+    if (count === NODE_ROWS.most) break
+    // (Each row and the comma after it, as they go in the step's JSON.)
+    characters += JSON.stringify(row).length + 1
+    if (characters > NODE_ROWS.characters) break
+    count++
+  }
+  return rows.slice(0, count)
+}
+
 function nodesCard(reads: Reads, retry: () => void): Described {
   const claims = objectsOf(reads.claims)
   const nodes = ownNodes(reads)
@@ -285,17 +309,26 @@ function nodesCard(reads: Reads, retry: () => void): Described {
       .map((claim) => ({ handed: claim, row: launchingRow(claim) })),
   ]
   const poolOf = (handed: Handed) => labelOf(handed.object, LABELS.pool) ?? ''
-  const rows = [...new Set(all.map(({ handed }) => poolOf(handed)))]
+  const ordered = [...new Set(all.map(({ handed }) => poolOf(handed)))]
     .sort()
     .flatMap((pool) =>
       all
         .filter(({ handed }) => poolOf(handed) === pool)
         .map(({ row }) => (pool ? { ...row, group: pool } : row)),
     )
-    .slice(0, MOST.rows)
+  const rows = fitting(ordered)
+  // (Where they don't all fit, the card says how many it shows, and where the rest are. Of a read
+  // Lumovi cut, only what was read: Lumovi's own line above the table says there are more.)
+  const cut = cutOf(reads.nodes) ?? cutOf(reads.claims)
+  const note =
+    rows.length >= ordered.length
+      ? undefined
+      : cut
+        ? `Shows ${figure(rows.length)} of the ${figure(ordered.length)} Lumovi read: the node pools in name order, as many as fit. Lumovi’s Nodes list has them all.`
+        : `Shows ${figure(rows.length)} of ${figure(ordered.length)}: the node pools in name order, as many as fit. The tiles above count every node, and Lumovi’s Nodes list has them all.`
   return h(
     'Card',
-    { key: 'nodes', title: 'Nodes' },
+    { key: 'nodes', title: 'Nodes', ...(note ? { note } : {}) },
     h('Table', {
       title: 'Nodes',
       headings: false,

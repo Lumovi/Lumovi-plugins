@@ -4,7 +4,7 @@ kind: Plugin
 metadata:
   name: prometheus-operator
 spec:
-  version: 1.0.0
+  version: 1.1.0
   needs:
     lumovi: 1.22.0
   groups:
@@ -17,6 +17,19 @@ spec:
     - { group: monitoring.coreos.com, kind: ServiceMonitor }
     - { group: monitoring.coreos.com, kind: PodMonitor }
     - { group: monitoring.coreos.com, kind: PrometheusRule }
+  # Its Target health page (src/prometheus-operator): what each namespace's Prometheus server says
+  # of its scrape targets, drawn from its answer and its own kinds alone.
+  pages:
+    - { id: targets, title: Target health }
+  # The Prometheus server beside each Prometheus (the prometheus-operated Service the operator
+  # makes in its namespace), asked through Lumovi, as the person, for its active targets, which it
+  # answers with what it discovered of each: labels and annotations of Services and Pods in every
+  # namespace it watches.
+  server:
+    service: { name: prometheus-operated }
+    in: { group: monitoring.coreos.com, kind: Prometheus }
+    port: web
+    paths: [/api/v1/targets?state=active]
   views:
     - name: prometheus-operator-servers
       kinds:

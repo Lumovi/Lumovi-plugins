@@ -1,0 +1,73 @@
+[
+  {
+    "action": "patch",
+    "target": {
+      "kind": "Application.argoproj.io",
+      "name": "storefront",
+      "namespace": "argocd"
+    },
+    "verb": "Sync",
+    "fields": [
+      "revision (text)",
+      "prune (switch)",
+      "strategy (choice)"
+    ],
+    "writes": [
+      "operation.initiatedBy.username",
+      "operation.sync.prune",
+      "operation.sync.revision",
+      "operation.sync.syncStrategy (apply or hook)"
+    ],
+    "change": {
+      "body": {
+        "operation": {
+          "initiatedBy": {
+            "username": "lumovi"
+          },
+          "sync": {
+            "revision": "main",
+            "prune": false,
+            "syncStrategy": {
+              "hook": {}
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "action": "patch",
+    "target": {
+      "kind": "Application.argoproj.io",
+      "name": "storefront",
+      "namespace": "argocd"
+    },
+    "verb": "Refresh",
+    "fields": [
+      "how (choice)"
+    ],
+    "writes": [
+      "metadata.annotations.argocd.argoproj.io/refresh"
+    ],
+    "change": {
+      "body": {
+        "metadata": {
+          "annotations": {
+            "argocd.argoproj.io/refresh": "normal"
+          }
+        }
+      }
+    }
+  },
+  {
+    "action": "delete",
+    "target": {
+      "kind": "Application.argoproj.io",
+      "name": "storefront",
+      "namespace": "argocd"
+    },
+    "fields": [],
+    "writes": [],
+    "change": {}
+  }
+]

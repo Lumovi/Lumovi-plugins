@@ -1,0 +1,456 @@
+{
+  "now": "2026-10-13T12:00:00Z",
+  "opens": {
+    "tab": "application",
+    "object": {
+      "kind": "argoproj.io/Application",
+      "namespace": "argocd",
+      "name": "storefront"
+    }
+  },
+  "objects": {
+    "argoproj.io/Application": [
+      {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "kind": "Application",
+        "metadata": {
+          "name": "storefront",
+          "namespace": "argocd",
+          "finalizers": [
+            "resources-finalizer.argocd.argoproj.io"
+          ]
+        },
+        "spec": {
+          "project": "shop",
+          "source": {
+            "repoURL": "https://github.com/acme/deploy.git",
+            "path": "apps/storefront",
+            "targetRevision": "main"
+          },
+          "destination": {
+            "server": "https://kubernetes.default.svc",
+            "namespace": "shop"
+          },
+          "syncPolicy": {
+            "automated": {
+              "prune": false,
+              "selfHeal": true
+            }
+          }
+        },
+        "status": {
+          "health": {
+            "status": "Healthy"
+          },
+          "sync": {
+            "status": "Synced",
+            "revision": "4f1c9aa2b7e3d5c8f0a1b2c3d4e5f60718293a4b"
+          },
+          "operationState": {
+            "phase": "Succeeded",
+            "finishedAt": "2026-10-13T11:57:00Z",
+            "operation": {
+              "initiatedBy": {
+                "automated": true
+              }
+            }
+          },
+          "resources": [
+            {
+              "group": "apps",
+              "kind": "Deployment",
+              "namespace": "shop",
+              "name": "storefront",
+              "status": "Synced",
+              "health": {
+                "status": "Healthy"
+              }
+            },
+            {
+              "kind": "Service",
+              "namespace": "shop",
+              "name": "storefront",
+              "status": "Synced",
+              "health": {
+                "status": "Healthy"
+              }
+            },
+            {
+              "kind": "ConfigMap",
+              "namespace": "shop",
+              "name": "storefront-config",
+              "status": "Synced"
+            }
+          ],
+          "history": [
+            {
+              "id": 12,
+              "revision": "4f1c9aa2b7e3d5c8f0a1b2c3d4e5f60718293a4b",
+              "deployedAt": "2026-10-13T11:57:00Z",
+              "source": {
+                "path": "apps/storefront"
+              }
+            },
+            {
+              "id": 11,
+              "revision": "9b2e771c0d4e5f60718293a4b4f1c9aa2b7e3d5c",
+              "deployedAt": "2026-10-11T12:00:00Z",
+              "source": {
+                "path": "apps/storefront"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "kind": "Application",
+        "metadata": {
+          "name": "payments",
+          "namespace": "argocd"
+        },
+        "spec": {
+          "project": "shop",
+          "source": {
+            "repoURL": "https://github.com/acme/deploy.git",
+            "path": "apps/payments",
+            "targetRevision": "v2.4.1"
+          },
+          "destination": {
+            "server": "https://kubernetes.default.svc",
+            "namespace": "payments"
+          }
+        },
+        "status": {
+          "health": {
+            "status": "Progressing"
+          },
+          "sync": {
+            "status": "OutOfSync",
+            "revision": "4f1c9aa2b7e3d5c8f0a1b2c3d4e5f60718293a4b"
+          },
+          "operationState": {
+            "phase": "Running",
+            "message": "waiting for healthy state of apps/Deployment/payments",
+            "operation": {
+              "initiatedBy": {
+                "username": "admin"
+              }
+            }
+          }
+        },
+        "operation": {
+          "sync": {
+            "revision": "v2.4.1"
+          }
+        }
+      },
+      {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "kind": "Application",
+        "metadata": {
+          "name": "legacy-batch",
+          "namespace": "argocd"
+        },
+        "spec": {
+          "project": "default",
+          "source": {
+            "repoURL": "https://github.com/acme/deploy.git",
+            "path": "jobs/legacy-batch",
+            "targetRevision": "main"
+          },
+          "destination": {
+            "server": "https://kubernetes.default.svc",
+            "namespace": "batch"
+          }
+        },
+        "status": {
+          "health": {
+            "status": "Degraded"
+          },
+          "sync": {
+            "status": "OutOfSync",
+            "revision": "4f1c9aa2b7e3d5c8f0a1b2c3d4e5f60718293a4b"
+          },
+          "operationState": {
+            "phase": "Failed",
+            "finishedAt": "2026-10-13T10:00:00Z",
+            "message": "one or more objects failed to apply",
+            "operation": {
+              "initiatedBy": {
+                "username": "admin"
+              }
+            }
+          },
+          "history": [
+            {
+              "id": 7,
+              "revision": "7e07b9c1d4e5f60718293a4b4f1c9aa2b7e3d5c",
+              "deployedAt": "2026-09-15T12:00:00Z",
+              "source": {
+                "path": "jobs/legacy-batch"
+              }
+            },
+            {
+              "id": 6,
+              "revision": "6e07b9c1d4e5f60718293a4b4f1c9aa2b7e3d5c",
+              "deployedAt": "2026-08-15T12:00:00Z",
+              "source": {
+                "path": "jobs/legacy-batch"
+              }
+            },
+            {
+              "id": 5,
+              "revision": "5e07b9c1d4e5f60718293a4b4f1c9aa2b7e3d5c",
+              "deployedAt": "2026-07-15T12:00:00Z",
+              "source": {
+                "path": "jobs/legacy-batch"
+              }
+            },
+            {
+              "id": 4,
+              "revision": "4e07b9c1d4e5f60718293a4b4f1c9aa2b7e3d5c",
+              "deployedAt": "2026-06-15T12:00:00Z",
+              "source": {
+                "path": "jobs/legacy-batch"
+              }
+            }
+          ],
+          "conditions": [
+            {
+              "type": "ComparisonError",
+              "message": "Failed to load target state: kustomize build jobs/legacy-batch failed",
+              "lastTransitionTime": "2026-10-13T10:00:00Z"
+            }
+          ]
+        }
+      },
+      {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "kind": "Application",
+        "metadata": {
+          "name": "checkout",
+          "namespace": "argocd"
+        },
+        "spec": {
+          "project": "shop",
+          "source": {
+            "repoURL": "https://github.com/acme/deploy.git",
+            "path": "apps/checkout",
+            "targetRevision": "main"
+          },
+          "destination": {
+            "server": "https://kubernetes.default.svc",
+            "namespace": "shop"
+          },
+          "syncPolicy": {
+            "automated": {
+              "prune": false,
+              "selfHeal": true
+            }
+          }
+        },
+        "status": {
+          "health": {
+            "status": "Healthy"
+          },
+          "sync": {
+            "status": "Synced",
+            "revision": "4f1c9aa2b7e3d5c8f0a1b2c3d4e5f60718293a4b"
+          },
+          "operationState": {
+            "phase": "Succeeded",
+            "finishedAt": "2026-10-13T11:57:00Z",
+            "operation": {
+              "initiatedBy": {
+                "automated": true
+              }
+            }
+          }
+        }
+      },
+      {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "kind": "Application",
+        "metadata": {
+          "name": "cart",
+          "namespace": "argocd"
+        },
+        "spec": {
+          "project": "shop",
+          "source": {
+            "repoURL": "https://github.com/acme/deploy.git",
+            "path": "apps/cart",
+            "targetRevision": "main"
+          },
+          "destination": {
+            "server": "https://kubernetes.default.svc",
+            "namespace": "shop"
+          },
+          "syncPolicy": {
+            "automated": {
+              "prune": false,
+              "selfHeal": true
+            }
+          }
+        },
+        "status": {
+          "health": {
+            "status": "Healthy"
+          },
+          "sync": {
+            "status": "Synced",
+            "revision": "4f1c9aa2b7e3d5c8f0a1b2c3d4e5f60718293a4b"
+          },
+          "operationState": {
+            "phase": "Succeeded",
+            "finishedAt": "2026-10-13T11:57:00Z",
+            "operation": {
+              "initiatedBy": {
+                "automated": true
+              }
+            }
+          }
+        }
+      },
+      {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "kind": "Application",
+        "metadata": {
+          "name": "search",
+          "namespace": "argocd"
+        },
+        "spec": {
+          "project": "shop",
+          "source": {
+            "repoURL": "https://github.com/acme/deploy.git",
+            "path": "apps/search",
+            "targetRevision": "v1.9.0"
+          },
+          "destination": {
+            "server": "https://kubernetes.default.svc",
+            "namespace": "search"
+          },
+          "syncPolicy": {
+            "automated": {
+              "prune": false,
+              "selfHeal": true
+            }
+          }
+        },
+        "status": {
+          "health": {
+            "status": "Healthy"
+          },
+          "sync": {
+            "status": "Synced",
+            "revision": "4f1c9aa2b7e3d5c8f0a1b2c3d4e5f60718293a4b"
+          },
+          "operationState": {
+            "phase": "Succeeded",
+            "finishedAt": "2026-10-13T06:00:00Z",
+            "operation": {
+              "initiatedBy": {
+                "automated": true
+              }
+            }
+          }
+        }
+      },
+      {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "kind": "Application",
+        "metadata": {
+          "name": "monitoring",
+          "namespace": "argocd"
+        },
+        "spec": {
+          "project": "default",
+          "sources": [
+            {
+              "repoURL": "https://prometheus-community.github.io/helm-charts",
+              "chart": "kube-prometheus-stack",
+              "targetRevision": "61.3.0"
+            },
+            {
+              "repoURL": "https://github.com/acme/deploy.git",
+              "path": "values/monitoring",
+              "targetRevision": "main",
+              "ref": "values"
+            }
+          ],
+          "destination": {
+            "server": "https://kubernetes.default.svc",
+            "namespace": "monitoring"
+          },
+          "syncPolicy": {
+            "automated": {
+              "prune": true,
+              "selfHeal": true
+            }
+          }
+        },
+        "status": {
+          "health": {
+            "status": "Healthy"
+          },
+          "sync": {
+            "status": "Synced",
+            "revisions": [
+              "61.3.0",
+              "4f1c9aa2b7e3d5c8f0a1b2c3d4e5f60718293a4b"
+            ]
+          },
+          "operationState": {
+            "phase": "Succeeded",
+            "finishedAt": "2026-10-13T09:00:00Z",
+            "operation": {
+              "initiatedBy": {
+                "automated": true
+              }
+            }
+          }
+        }
+      }
+    ],
+    "argoproj.io/AppProject": [
+      {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "kind": "AppProject",
+        "metadata": {
+          "name": "default",
+          "namespace": "argocd"
+        }
+      },
+      {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "kind": "AppProject",
+        "metadata": {
+          "name": "shop",
+          "namespace": "argocd"
+        }
+      }
+    ]
+  },
+  "presses": [
+    {
+      "part": "Header",
+      "carries": {
+        "button": "sync"
+      }
+    },
+    {
+      "part": "Header",
+      "carries": {
+        "button": "refresh"
+      }
+    },
+    {
+      "part": "Header",
+      "carries": {
+        "button": "delete"
+      },
+      "answer": "cancelled"
+    }
+  ]
+}

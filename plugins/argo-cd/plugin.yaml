@@ -6,7 +6,7 @@ metadata:
 spec:
   version: 1.1.0
   needs:
-    lumovi: 1.22.0
+    lumovi: 1.23.0
   groups:
     - argoproj.io
   label: Argo CD
@@ -15,6 +15,15 @@ spec:
     - { group: argoproj.io, kind: Application }
     - { group: argoproj.io, kind: ApplicationSet }
     - { group: argoproj.io, kind: AppProject }
+  # Its overview and a tab on an Application (src/argo-cd), drawn from its own kinds alone; and,
+  # from the tab, Sync, Refresh and Delete, each confirmed by the person in Lumovi's own dialog.
+  # (Beside the view's own Sync and Refresh, below, which stay wherever the tab doesn't run.)
+  pages:
+    - { id: overview, title: Overview }
+  tabs:
+    - { id: application, title: Argo CD, kinds: [{ group: argoproj.io, kind: Application }] }
+  changes:
+    - { group: argoproj.io, kind: Application, actions: [patch, delete] }
   views:
     - name: argo-cd-applications
       kinds:
@@ -69,6 +78,8 @@ spec:
         - name: Destination
           kind: Namespace
           objectName: '{{ .spec.destination.namespace }}'
+      # (These run at once, on Lumovi's own list, wherever it is. The tab's Sync… and Refresh…,
+      # which ask first, run only where a plugin's pages do.)
       actions:
         - name: Sync
           runs: at-once

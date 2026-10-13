@@ -1,0 +1,249 @@
+[
+  {
+    "part": "Stack",
+    "props": {},
+    "children": [
+      {
+        "part": "Header",
+        "props": {
+          "name": "storefront",
+          "status": {
+            "level": "healthy",
+            "word": "Healthy"
+          },
+          "buttons": [
+            {
+              "key": "delete",
+              "name": "Delete",
+              "changes": true,
+              "asks": true
+            },
+            {
+              "key": "refresh",
+              "name": "Refresh",
+              "changes": true,
+              "asks": true
+            },
+            {
+              "key": "sync",
+              "name": "Sync",
+              "changes": true,
+              "asks": true
+            }
+          ],
+          "onPress": "h1"
+        },
+        "children": []
+      },
+      {
+        "part": "Tiles",
+        "props": {
+          "tiles": [
+            {
+              "key": "sync",
+              "icon": "git-merge",
+              "label": "Sync",
+              "value": {
+                "kind": "words",
+                "text": "Synced"
+              },
+              "level": "healthy",
+              "detail": "3 of 3 resources"
+            },
+            {
+              "key": "revision",
+              "icon": "git-branch",
+              "label": "Synced revision",
+              "value": {
+                "kind": "figure",
+                "text": "4f1c9aa"
+              },
+              "detail": "main"
+            },
+            {
+              "key": "last-synced",
+              "icon": "timer",
+              "label": "Last synced",
+              "value": {
+                "kind": "time",
+                "time": "2026-10-13T11:57:00Z"
+              },
+              "detail": "Succeeded, by auto-sync"
+            },
+            {
+              "key": "auto-sync",
+              "icon": "refresh-cw",
+              "label": "Auto-sync",
+              "value": {
+                "kind": "words",
+                "text": "On"
+              },
+              "detail": "Prune off · self-heal on"
+            }
+          ]
+        },
+        "children": []
+      },
+      {
+        "part": "Card",
+        "props": {
+          "title": "Resources"
+        },
+        "children": [
+          {
+            "part": "Table",
+            "props": {
+              "title": "Resources",
+              "headings": true,
+              "columns": [
+                {
+                  "name": "Sync",
+                  "kind": "status"
+                },
+                {
+                  "name": "Health",
+                  "kind": "status"
+                }
+              ],
+              "rows": [
+                {
+                  "key": "r0",
+                  "lead": {
+                    "name": "storefront-config",
+                    "under": "ConfigMap · shop"
+                  },
+                  "cells": [
+                    {
+                      "kind": "status",
+                      "level": "healthy",
+                      "word": "Synced"
+                    },
+                    {
+                      "kind": "none"
+                    }
+                  ]
+                },
+                {
+                  "key": "r1",
+                  "lead": {
+                    "level": "healthy",
+                    "name": "storefront",
+                    "under": "Deployment · shop"
+                  },
+                  "cells": [
+                    {
+                      "kind": "status",
+                      "level": "healthy",
+                      "word": "Synced"
+                    },
+                    {
+                      "kind": "status",
+                      "level": "healthy",
+                      "word": "Healthy"
+                    }
+                  ]
+                },
+                {
+                  "key": "r2",
+                  "lead": {
+                    "level": "healthy",
+                    "name": "storefront",
+                    "under": "Service · shop"
+                  },
+                  "cells": [
+                    {
+                      "kind": "status",
+                      "level": "healthy",
+                      "word": "Synced"
+                    },
+                    {
+                      "kind": "status",
+                      "level": "healthy",
+                      "word": "Healthy"
+                    }
+                  ]
+                }
+              ],
+              "shows": 6
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "part": "Card",
+        "props": {
+          "title": "History"
+        },
+        "children": [
+          {
+            "part": "Table",
+            "props": {
+              "title": "History",
+              "headings": true,
+              "columns": [
+                {
+                  "name": "Revision",
+                  "kind": "text"
+                },
+                {
+                  "name": "Source path",
+                  "kind": "text"
+                },
+                {
+                  "name": "Deployed",
+                  "kind": "age",
+                  "width": "text"
+                }
+              ],
+              "rows": [
+                {
+                  "key": "h12",
+                  "lead": {
+                    "name": "12"
+                  },
+                  "cells": [
+                    {
+                      "kind": "text",
+                      "text": "4f1c9aa"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "apps/storefront"
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-13T11:57:00Z"
+                    }
+                  ]
+                },
+                {
+                  "key": "h11",
+                  "lead": {
+                    "name": "11"
+                  },
+                  "cells": [
+                    {
+                      "kind": "text",
+                      "text": "9b2e771"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "apps/storefront"
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-11T12:00:00Z"
+                    }
+                  ]
+                }
+              ],
+              "shows": 6
+            },
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+]

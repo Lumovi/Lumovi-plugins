@@ -10,6 +10,7 @@ import { field, h, type Described, type Handed, type Page } from '../runtime/ind
 import {
   HEALTH_ORDER,
   autoSync,
+  cluster,
   conditionLevel,
   conditions,
   deletesWhatItDeployed,
@@ -20,10 +21,12 @@ import {
   history,
   lastSync,
   nameOf,
+  operation,
   projectOf,
   resources,
   restByHealth,
   running,
+  secondStatus,
   severalSources,
   shortRevision,
   source,
@@ -82,14 +85,15 @@ function overviewTiles(got: Got): Described {
       key: 'tiles',
       tiles: [
         unanswered({ key: 'healthy', icon: 'activity', label: 'Healthy', opens: opens(false) }),
-        unanswered({ key: 'out-of-sync', icon: 'git-merge', label: 'Out of sync', opens: opens(false) }),
-        unanswered({ key: 'failed', icon: 'flame', label: 'Last sync failed', opens: opens(false) }),
+        // (Lumovi's list can't be narrowed to these yet: they open nothing, rather than all of it.)
+        unanswered({ key: 'out-of-sync', icon: 'git-merge', label: 'Out of sync' }),
+        unanswered({ key: 'failed', icon: 'flame', label: 'Last sync failed' }),
       ],
     })
   }
   const healthy = apps.filter((app) => health(app).level === 'healthy').length
   const critical = apps.some((app) => health(app).level === 'critical')
-  const outOfSync = apps.filter((app) => !sync(app).synced).length
+  const outOfSync = apps.filter((app) => sync(app).outOfSync).length
   const failing = apps.filter((app) => failed(app) !== undefined)
   return h('Tiles', {
     key: 'tiles',
@@ -111,7 +115,6 @@ function overviewTiles(got: Got): Described {
         value: { kind: 'figure', text: String(outOfSync) },
         level: outOfSync ? 'warning' : 'healthy',
         detail: `of ${counted(apps.length, 'application')}`,
-        opens: opens(false),
         ...cutIn(got),
       },
       {
@@ -126,8 +129,8 @@ function overviewTiles(got: Got): Described {
             : failing.length === 1
               ? nameOf(failing[0]!)
               : counted(failing.length, 'application'),
-        // (Unfiltered: an application can be healthy and its last sync failed.)
-        opens: opens(false),
+        // (No list of its own: Lumovi's can be narrowed by health, and a healthy one's last sync
+        // can have failed. It opens nothing rather than every application.)
         ...cutIn(got),
       },
     ],
@@ -169,6 +172,7 @@ function applications(got: Got, retry: () => void): Described {
               { kind: 'text', text: source(object) },
               { kind: 'text', text: targetRevision(object) },
               { kind: 'text', text: destination(object) },
+              { kind: 'text', text: cluster(object) },
               last ? { kind: 'age', time: last.time } : { kind: 'none' },
             ],
             opens: token,
@@ -186,7 +190,8 @@ function applications(got: Got, retry: () => void): Described {
         { name: 'Sync', kind: 'status' },
         { name: 'Repository and path', kind: 'text' },
         { name: 'Target revision', kind: 'text' },
-        { name: 'Destination', kind: 'text' },
+        { name: 'Namespace', kind: 'text' },
+        { name: 'Cluster', kind: 'text' },
         { name: 'Last synced', kind: 'age', width: 'text' },
       ],
       rows,
@@ -264,17 +269,36 @@ function goesTo(resource: ReturnType<typeof resources>[number]) {
   return { goes: { list, name: resource.name, namespace: resource.namespace } }
 }
 
+/**
+ * A row's own key, the same from one description to the next: what it is, never where it sorts.
+ * Where that's longer than a key can be, a short hash of it; a second of the same, numbered.
+ */
+function rowKey(identity: string, used: Set<string>): string {
+  let key = identity
+  if (key.length > KEY_MOST) {
+    let hash = 0x811c9dc5
+    for (let i = 0; i < identity.length; i++) hash = Math.imul(hash ^ identity.charCodeAt(i), 0x01000193) >>> 0
+    key = `${identity.slice(0, KEY_MOST - 9)}#${hash.toString(16).padStart(8, '0')}`
+  }
+  for (let n = 2; used.has(key); n++) key = `${key.slice(0, KEY_MOST - 4)}~${n}`
+  used.add(key)
+  return key
+}
+/** How long a row's key can be: the kit's Table text. */
+const KEY_MOST = 253
+
 /** Where a resource stands among the rest, worst first: one with no health after every level. */
 const rank = (resource: ReturnType<typeof resources>[number]) =>
   resource.health ? HEALTH_ORDER[resource.health.level] : Object.keys(HEALTH_ORDER).length
 
 function resourcesCard(object: Object_): Described {
+  const used = new Set<string>()
   const rows = resources(object)
     // (Worst first; one with no health at all, last.)
     .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
     .slice(0, MOST)
-    .map((resource, i) => ({
-      key: `r${i}`,
+    .map((resource) => ({
+      key: rowKey([resource.group, resource.kind, resource.namespace ?? '', resource.name].join('/'), used),
       lead: {
         ...(resource.health ? { level: resource.health.level } : {}),
         name: resource.name,
@@ -342,6 +366,7 @@ function historyTable(object: Object_): Described {
 }
 
 function conditionsTable(object: Object_): Described {
+  const used = new Set<string>()
   return h('Table', {
     title: 'Conditions',
     headings: true,
@@ -351,8 +376,8 @@ function conditionsTable(object: Object_): Described {
     ],
     rows: conditions(object)
       .slice(0, MOST)
-      .map((condition, i) => ({
-        key: `c${i}`,
+      .map((condition) => ({
+        key: rowKey(`${condition.type}/${condition.time ?? ''}/${condition.message}`, used),
         lead: { level: conditionLevel(condition.type), name: condition.type },
         cells: [
           { kind: 'text', text: condition.message },
@@ -378,9 +403,16 @@ export function tabEnded(said: string): Described {
   })
 }
 
-export function tab(object: Object_, press: (button: Pressed) => void): Described {
+export function tab(
+  object: Object_,
+  press: (button: Pressed) => void,
+  now = Date.now(),
+  /** When its operation that hasn't started was first seen here: a minute on, it may be stuck. */
+  firstSeen?: number,
+): Described {
   const { level, word } = health(object)
   const reason = detail(object)
+  const op = operation(object)
   // (With history, its conditions make a pair; without any, history is a card of its own.)
   const below = conditions(object).length
     ? h(
@@ -397,21 +429,34 @@ export function tab(object: Object_, press: (button: Pressed) => void): Describe
       key: 'header',
       name: nameOf(object),
       status: { level, word, ...(reason ? { detail: reason } : {}) },
-      // (Sync… is off while a sync runs: Argo CD takes none over it. Delete… says what else it
-      // deletes, where Argo CD's finalizer would.)
-      buttons: [
-        {
-          key: 'delete',
-          name: 'Delete',
-          changes: true,
-          asks: true,
-          ...(deletesWhatItDeployed(object)
-            ? { note: 'Deleting it also deletes what it deployed (it has Argo CD’s resources finalizer).' }
-            : {}),
-        },
-        { key: 'refresh', name: 'Refresh', changes: true, asks: true },
-        { key: 'sync', name: 'Sync', changes: true, asks: true, ...(running(object) ? { off: 'A sync is running.' } : {}) },
-      ],
+      // Beside health, what's happening to it: an operation, how the last one ended, or its sync.
+      secondStatus: secondStatus(object, now, firstSeen),
+      // While an operation is on it, Sync is busy where it was, and the only button: Argo CD takes
+      // no other over it. (How long is the second status's to say.) Else Delete… says what else
+      // it deletes, where Argo CD's finalizer would.
+      buttons: op
+        ? [
+            {
+              key: 'sync',
+              name: 'Sync',
+              changes: true,
+              asks: true,
+              busy: { word: op.phase === 'terminating' ? 'Terminating' : 'Syncing' },
+            },
+          ]
+        : [
+            {
+              key: 'delete',
+              name: 'Delete',
+              changes: true,
+              asks: true,
+              ...(deletesWhatItDeployed(object)
+                ? { note: 'Deleting it also deletes what it deployed (it has Argo CD’s resources finalizer).' }
+                : {}),
+            },
+            { key: 'refresh', name: 'Refresh', changes: true, asks: true },
+            { key: 'sync', name: 'Sync', changes: true, asks: true },
+          ],
       onPress: ({ button }: { button: string }) => press(button as Pressed),
     }),
     tabTiles(object),

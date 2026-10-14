@@ -43,27 +43,118 @@ export function health(object: Object_): { level: Level; word: string } {
 /** The order of health, worst first: what a list sorts by within a group. */
 export const HEALTH_ORDER: Record<Level, number> = { critical: 0, warning: 1, progressing: 2, neutral: 3, healthy: 4 }
 
-/** Argo CD's sync status, as a level and words: Synced, Out of sync, Unknown. */
-export function sync(object: Object_): { level: Level; word: string; synced: boolean } {
+/**
+ * Argo CD's sync status, as a level and words: Synced, Out of sync, or Unknown where Argo CD can't
+ * tell (which is neither: it's counted with neither).
+ */
+export function sync(object: Object_): { level: Level; word: string; synced: boolean; outOfSync: boolean } {
   const status = text(at(object, 'status', 'sync', 'status'))
-  if (status === 'Synced') return { level: 'healthy', word: 'Synced', synced: true }
-  if (status === 'OutOfSync') return { level: 'warning', word: 'Out of sync', synced: false }
-  return { level: 'neutral', word: 'Unknown', synced: false }
+  if (status === 'Synced') return { level: 'healthy', word: 'Synced', synced: true, outOfSync: false }
+  if (status === 'OutOfSync') return { level: 'warning', word: 'Out of sync', synced: false, outOfSync: true }
+  return { level: 'neutral', word: 'Unknown', synced: false, outOfSync: false }
 }
 
-/** The operation Argo CD is running on it now, if any: what blocks a new sync. */
-export function running(object: Object_): { message?: string } | undefined {
+/**
+ * The operation Argo CD has on it now, if any: asked for and not started yet (`.operation`, and
+ * no state of its own: none, or a finished one's), running, or terminating; when it started, and
+ * Argo CD's message.
+ */
+export type Operation =
+  | { phase: 'waiting' }
+  | { phase: 'running' | 'terminating'; since?: string; message?: string }
+export function operation(object: Object_): Operation | undefined {
+  const state = at(object, 'status', 'operationState')
+  const phase = text(at(state, 'phase'))
+  if (phase === 'Running' || phase === 'Terminating') {
+    const since = text(at(state, 'startedAt'))
+    const message = text(at(state, 'message'))
+    return {
+      phase: phase === 'Running' ? 'running' : 'terminating',
+      ...(since ? { since } : {}),
+      ...(message ? { message } : {}),
+    }
+  }
+  const asked = at(object, 'operation')
+  return asked !== undefined && asked !== null ? { phase: 'waiting' } : undefined
+}
+
+/** Whether an operation is on it: what blocks a new sync (Argo CD takes none over one). */
+export const running = (object: Object_) => operation(object) !== undefined
+
+/**
+ * How its last operation ended, where it didn't go well (none is running): terminated (Argo CD's
+ * Failed, "Operation terminated"), failed, or an error; and Argo CD's message.
+ */
+export function ended(object: Object_): { how: 'terminated' | 'failed' | 'error'; message: string } | undefined {
+  if (running(object)) return undefined
   const phase = text(at(object, 'status', 'operationState', 'phase'))
-  if (at(object, 'operation') === undefined && phase !== 'Running' && phase !== 'Terminating') return undefined
   const message = text(at(object, 'status', 'operationState', 'message'))
-  return message ? { message } : {}
+  if (phase === 'Failed' && message === 'Operation terminated') return { how: 'terminated', message }
+  if (phase === 'Failed') return { how: 'failed', message: message ?? 'Its last sync failed.' }
+  if (phase === 'Error') return { how: 'error', message: message ?? 'Its last sync couldn’t run.' }
+  return undefined
 }
 
-/** How its last operation ended, where it failed: its message. */
+/** How its last operation ended, where it failed (not where it was terminated): its message. */
 export function failed(object: Object_): string | undefined {
-  const phase = text(at(object, 'status', 'operationState', 'phase'))
-  if (phase !== 'Failed' && phase !== 'Error') return undefined
-  return text(at(object, 'status', 'operationState', 'message')) ?? 'Its last sync failed.'
+  const last = ended(object)
+  return last && last.how !== 'terminated' ? last.message : undefined
+}
+
+/** How long a sync runs before it may be stuck, and waits unstarted before Argo CD may be. */
+export const STUCK_AFTER_MS = 10 * 60_000
+export const UNSTARTED_AFTER_MS = 60_000
+
+/**
+ * The Header's second status: what's happening to it, beside its health. The first that holds:
+ * an operation (running, past ten minutes amber; terminating; asked for and not started, amber a
+ * minute after it was first seen); how the last one ended, where it didn't go well; else its sync
+ * status. Its detail is the line under the header.
+ */
+export function secondStatus(
+  object: Object_,
+  now: number,
+  firstSeen?: number,
+): { level: Level; word: string; since?: string; detail?: string } {
+  const op = operation(object)
+  if (op?.phase === 'running') {
+    const started = op.since ? Date.parse(op.since) : NaN
+    const minutes = Number.isFinite(started) ? Math.floor((now - started) / 60_000) : 0
+    const stuck = Number.isFinite(started) && now - started >= STUCK_AFTER_MS
+    const said = op.message ?? 'Argo CD is applying it.'
+    return {
+      level: stuck ? 'warning' : 'progressing',
+      word: 'Syncing',
+      ...(op.since ? { since: op.since } : {}),
+      detail: stuck
+        ? `May be stuck after ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}: ${said}`
+        : `Sync running: ${said}`,
+    }
+  }
+  if (op?.phase === 'terminating') {
+    return {
+      level: 'progressing',
+      word: 'Terminating',
+      ...(op.since ? { since: op.since } : {}),
+      detail: `Sync terminating: ${op.message ?? 'Argo CD is stopping it.'}`,
+    }
+  }
+  if (op?.phase === 'waiting') {
+    const late = firstSeen !== undefined && now - firstSeen >= UNSTARTED_AFTER_MS
+    return late
+      ? {
+          level: 'warning',
+          word: 'Syncing',
+          detail: 'Not started: Argo CD hasn’t picked up the sync for over a minute. Its application controller may not be running.',
+        }
+      : { level: 'progressing', word: 'Syncing', detail: 'Waiting for Argo CD to start the sync.' }
+  }
+  const last = ended(object)
+  if (last?.how === 'failed') return { level: 'critical', word: 'Sync failed', detail: last.message }
+  if (last?.how === 'error') return { level: 'critical', word: 'Sync error', detail: last.message }
+  if (last?.how === 'terminated') return { level: 'neutral', word: 'Sync terminated', detail: last.message }
+  const { level, word } = sync(object)
+  return { level, word }
 }
 
 /** Its conditions: each type and message, and when, newest first. */
@@ -81,13 +172,11 @@ export function conditions(object: Object_): { type: string; message: string; ti
 export const conditionLevel = (type: string): Level => (/Error$/.test(type) ? 'warning' : 'neutral')
 
 /**
- * The header's detail: the running operation's message first (or that one is running), then the
- * failed operation's, then the first condition's; nothing where there's none.
+ * The header's own detail, under its health: the first condition's message. (What an operation
+ * says, and how the last one ended, is the second status's line, which stands in its place.)
  */
 export function detail(object: Object_): string | undefined {
-  const now = running(object)
-  if (now) return now.message ? `Sync running: ${now.message}` : 'A sync is running.'
-  return failed(object) ?? conditions(object)[0]?.message
+  return conditions(object)[0]?.message
 }
 
 /** Its sources: `spec.sources` of an Application with several, else its one `spec.source`. */
@@ -117,14 +206,22 @@ export function source(object: Object_): string {
   return all.length > 1 ? `${said} and ${all.length - 1} more` : said
 }
 
-/** Where it deploys to: its destination's namespace. */
+/** Where it deploys to: its destination's namespace, and its cluster (by name, else its server). */
 export const destination = (object: Object_) => text(at(object, 'spec', 'destination', 'namespace')) ?? ''
+export const cluster = (object: Object_) =>
+  text(at(object, 'spec', 'destination', 'name')) ?? text(at(object, 'spec', 'destination', 'server')) ?? ''
 
-/** When it last synced, how that went and who started it. */
+/**
+ * When it last synced, how that went and who started it. While one runs (its state has no end
+ * yet), the last that was deployed, from its history.
+ */
 export function lastSync(object: Object_): { time: string; how: string } | undefined {
   const state = at(object, 'status', 'operationState')
   const time = text(at(state, 'finishedAt'))
-  if (!time) return undefined
+  if (!time) {
+    const deployed = history(object).find((entry) => entry.deployed)?.deployed
+    return deployed ? { time: deployed, how: 'Succeeded' } : undefined
+  }
   const phase = text(at(state, 'phase')) ?? 'Finished'
   const automated = at(state, 'operation', 'initiatedBy', 'automated') === true
   const by = automated ? 'by auto-sync' : text(at(state, 'operation', 'initiatedBy', 'username'))
@@ -134,7 +231,10 @@ export function lastSync(object: Object_): { time: string; how: string } | undef
 /** Its sync policy: automated or not, and with prune and self-heal. */
 export function autoSync(object: Object_): { on: boolean; detail: string } {
   const automated = at(object, 'spec', 'syncPolicy', 'automated')
-  if (typeof automated !== 'object' || automated === null) return { on: false, detail: 'Syncs when asked' }
+  // (Argo CD 3 keeps its settings with `enabled: false` where it's turned off.)
+  if (typeof automated !== 'object' || automated === null || at(automated, 'enabled') === false) {
+    return { on: false, detail: 'Syncs when asked' }
+  }
   const prune = at(automated, 'prune') === true
   const heal = at(automated, 'selfHeal') === true
   return { on: true, detail: `Prune ${prune ? 'on' : 'off'} · self-heal ${heal ? 'on' : 'off'}` }

@@ -655,7 +655,9 @@ export function says(props, path) {
 }
 
 /** The groups of PLUGIN_SINCE this check reads. */
-const SINCE_GROUPS = ['file', 'read', 'parts', 'kinds', 'props']
+const SINCE_GROUPS = ['file', 'read', 'parts', 'kinds', 'props', 'action']
+/** What a view's action can say that this check reads a plugin's use of. */
+const ACTION_KEYS = ['busy', 'same', 'confirmTitle', 'confirmButton']
 /** The keys of a file this check reads a plugin's use of: another is said, never passed over. */
 const FILE_KEYS = [
   'pages',
@@ -692,6 +694,9 @@ export function needsProblems({ plugin, used, since, version }) {
     ...Object.keys(since.file ?? {})
       .filter((key) => !FILE_KEYS.includes(key))
       .map((key) => `file key ${key}`),
+    ...Object.keys(since.action ?? {})
+      .filter((key) => !ACTION_KEYS.includes(key))
+      .map((key) => `action key ${key}`),
     // (And a props key that isn't one of its parts, then a path: it would never be matched.)
     ...Object.keys(since.props ?? {})
       .filter((key) => !Object.hasOwn(since.parts ?? {}, key.split('.')[0]) || !key.includes('.'))
@@ -717,6 +722,9 @@ export function needsProblems({ plugin, used, since, version }) {
     ...((plugin.links ?? []).length > 0 ? [['its file’s links', since.file.links]] : []),
     ...(plugin.logs !== undefined ? [['its file’s logs', since.file.logs]] : []),
     ...(plugin.server !== undefined ? [['its file’s server', since.file.server]] : []),
+    ...ACTION_KEYS.filter((key) =>
+      (plugin.views ?? []).some((view) => (view.actions ?? []).some((action) => action[key] !== undefined)),
+    ).map((key) => [`an action’s ${key}`, since.action?.[key]]),
     ...used.read.map((what) => [`a read’s ${what}`, since.read[what]]),
     ...used.parts.map((part) => [`the part ${part}`, since.parts[part]]),
     ...used.kinds.map((kind) => [`a ${kind}`, since.kinds[kind]]),

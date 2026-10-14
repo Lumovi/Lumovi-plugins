@@ -133,12 +133,42 @@ export interface Asked {
 /** Where a field's value goes in a proposed change: `field('revision')` in place of a value. */
 export const field = (key: string): { field: string } => ({ field: key })
 
-/** A field the person sets in Lumovi's dialog, above the change: its kind, its words, where it starts. */
+/**
+ * A field the person sets in Lumovi's dialog, above the change: its kind, its words, where it
+ * starts. A switch may show the fields after it only while it's on (`shows`: hidden, they go into
+ * the change as nothing), fill in one of two values of its own (`values`, off and on, where a place
+ * may name another field), and change the button's word while it's on (`verb`). Picks fill in
+ * their picked options' values, in the list's order. A section is a heading over the fields after it.
+ */
 export type Field =
   | { kind: 'text'; key: string; label: string; hint?: string; most?: number; required?: boolean; value?: string }
   | { kind: 'number'; key: string; label: string; hint?: string; min: number; max: number; value?: number }
   | { kind: 'choice'; key: string; label: string; hint?: string; options: { label: string; value: unknown }[]; value?: number }
-  | { kind: 'switch'; key: string; label: string; hint?: string; value?: boolean }
+  | {
+      kind: 'switch'
+      key: string
+      label: string
+      hint?: string
+      value?: boolean
+      shows?: readonly string[]
+      values?: readonly [unknown, unknown]
+      verb?: string
+    }
+  | { kind: 'check'; key: string; label: string; hint?: string; value?: boolean }
+  | { kind: 'picks'; key: string; label: string; hint?: string; options: { label: string; value: unknown }[]; value?: number[] }
+  | { kind: 'section'; label: string }
+
+/**
+ * Harm a proposal adds to what its file says does harm: its own (`says`, and a `verb` for the
+ * button), or a `detail` under one of its file's, by that one's `path` (what a prune deletes).
+ * It never takes away a harm the file says.
+ */
+export interface ProposedHarm {
+  path?: string
+  says?: string
+  verb?: string
+  detail?: string
+}
 
 /**
  * A change a page proposes, of one of its plugin's own kinds its file says it changes: to an
@@ -177,7 +207,7 @@ export interface Page {
    * fields asked for, and makes it only once the person confirms. What became of it, once it has.
    * (Outside a press's handler, or a second time for one press, it's refused.)
    */
-  propose(change: ProposedChange, said?: { verb?: string; fields?: readonly Field[] }): Promise<ProposalOutcome>
+  propose(change: ProposedChange, said?: { verb?: string; fields?: readonly Field[]; harm?: readonly ProposedHarm[] }): Promise<ProposalOutcome>
 }
 
 /**
@@ -252,6 +282,7 @@ function run(box: Box, start: (page: Page) => void): void {
         change,
         ...(said.verb === undefined ? {} : { verb: said.verb }),
         ...(said.fields === undefined ? {} : { fields: said.fields }),
+        ...(said.harm === undefined ? {} : { harm: said.harm }),
       })
     })
   }

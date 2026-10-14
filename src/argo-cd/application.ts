@@ -392,6 +392,46 @@ export function syncResults(object: Object_): SyncResult[] {
   })
 }
 
+/**
+ * The hooks a sync runs, as its last one ran them (`PreSync db-migrate`), in their order: those a
+ * sync without hooks leaves out.
+ */
+export function hooksOf(object: Object_): string[] {
+  const run = syncResults(object).filter((each) => each.hook && !['PostDelete', 'Skip'].includes(each.hook))
+  return [...new Set(run.map((each) => `${each.hook} ${each.name}`))]
+}
+
+/** What a sync that prunes would delete, as Argo CD marks it (`requiresPruning`): its kind and name. */
+export function toPrune(object: Object_): string[] {
+  return list(at(object, 'status', 'resources'))
+    .filter((resource) => at(resource, 'requiresPruning') === true)
+    .map((resource) => {
+      const namespace = text(at(resource, 'namespace'))
+      return `${text(at(resource, 'kind')) ?? ''} ${namespace ? `${namespace}/` : ''}${text(at(resource, 'name')) ?? ''}`
+    })
+}
+
+/** Its own sync options (`spec.syncPolicy.syncOptions`), as written: `CreateNamespace=true`. */
+export const syncOptionsOf = (object: Object_) =>
+  list(at(object, 'spec', 'syncPolicy', 'syncOptions')).filter((option): option is string => typeof option === 'string' && option !== '')
+
+/** Its own retry (`spec.syncPolicy.retry`), where it says one: how many times, and its backoff. */
+export function retryOf(object: Object_): { limit?: number; duration?: string; factor?: number; maxDuration?: string } | undefined {
+  const retry = at(object, 'spec', 'syncPolicy', 'retry')
+  if (typeof retry !== 'object' || retry === null) return undefined
+  const whole = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) ? value : undefined)
+  const limit = whole(at(retry, 'limit'))
+  const duration = text(at(retry, 'backoff', 'duration'))
+  const factor = whole(at(retry, 'backoff', 'factor'))
+  const maxDuration = text(at(retry, 'backoff', 'maxDuration'))
+  return {
+    ...(limit === undefined ? {} : { limit }),
+    ...(duration ? { duration } : {}),
+    ...(factor === undefined ? {} : { factor }),
+    ...(maxDuration ? { maxDuration } : {}),
+  }
+}
+
 /** Why a history entry can't be rolled back to now, if it can't: as Argo CD's own Rollback refuses. */
 export function cannotRollBack(object: Object_): string | undefined {
   if (at(object, 'metadata', 'deletionTimestamp') !== undefined) return 'It’s being deleted.'
@@ -533,6 +573,22 @@ export function needsLook(object: Object_, now: number): Why | undefined {
   return undefined
 }
 
+/**
+ * Its operation, as a status: one on it now (with how long, where Argo CD has started it), or
+ * how the last ended where it didn't succeed; none, else.
+ */
+export function operationStatus(object: Object_): { level: Level; word: string; since?: string } | undefined {
+  const op = operation(object)
+  if (op) {
+    const word = op.phase === 'terminating' ? 'Terminating' : op.phase === 'running' ? 'Syncing' : 'Waiting'
+    return { level: 'progressing', word, ...('since' in op && op.since ? { since: op.since } : {}) }
+  }
+  const last = ended(object)
+  if (last?.how === 'terminated') return { level: 'neutral', word: 'Terminated' }
+  if (last?.how === 'failed') return { level: 'critical', word: 'Failed' }
+  if (last?.how === 'error') return { level: 'critical', word: 'Error' }
+  return undefined
+}
 /** How a sync ended, as a level and Argo CD's word for it (Terminated: Failed, "Operation terminated"). */
 export type Ended = { level: Level; word: 'Succeeded' | 'Failed' | 'Error' | 'Terminated' }
 

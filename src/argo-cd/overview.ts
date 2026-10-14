@@ -17,6 +17,7 @@ import {
   nameOf,
   needsLook,
   operation,
+  operationStatus,
   projectOf,
   restByHealth,
   shortRevision,
@@ -52,8 +53,6 @@ export const counted = (count: number, noun: string) => `${count.toLocaleString(
 const ROWS = 6
 /** The syncs that ended last, across applications. */
 const RECENT = 20
-/** The levels a list is filtered to where something isn't well, as Lumovi's own list filters it. */
-const UNHEALTHY = ['critical', 'warning', 'progressing']
 
 /** What the Overview reads: Argo CD's applications, projects and ApplicationSets. */
 export interface Read {
@@ -69,15 +68,28 @@ function worst(apps: readonly Object_[]): Level | undefined {
     : apps.map((app) => health(app).level).sort((a, b) => HEALTH_ORDER[a] - HEALTH_ORDER[b])[0]
 }
 
+/** The plugin's own Applications page, with its filters set where some are said. */
+export const applicationsPage = (filters: Record<string, readonly string[]> = {}) => {
+  const set = Object.entries(filters).filter(([, values]) => values.length > 0)
+  return { page: 'applications', ...(set.length > 0 ? { filters: Object.fromEntries(set) } : {}) }
+}
+/** How many values a link to the page sets in one filter, and how long one may be: as Lumovi takes them. */
+const LINK = { values: 20, value: 253 }
+/** The words some applications have, each once, in the order first met: as many as a link takes. */
+const wordsOf = (apps: readonly Object_[], word: (app: Object_) => string | undefined) =>
+  [...new Set(apps.map(word).filter((each): each is string => each !== undefined && each.length <= LINK.value))].slice(
+    0,
+    LINK.values,
+  )
+
 function tiles(got: Got, now: number): Described {
   const apps = objectsOf(got)?.map(({ object }) => object)
-  const lists = (unhealthy: boolean) => ({ list: APPLICATIONS, ...(unhealthy ? { health: UNHEALTHY } : {}) })
   if (!apps) {
     const unanswered = got && 'ended' in got ? { detail: 'Couldn’t read the applications' } : {}
     return h('Tiles', {
       key: 'tiles',
       tiles: [
-        { key: 'healthy', icon: 'activity', label: 'Healthy', opens: lists(false), ...unanswered },
+        { key: 'healthy', icon: 'activity', label: 'Healthy', opens: applicationsPage(), ...unanswered },
         { key: 'synced', icon: 'git-branch', label: 'Synced', ...unanswered },
         { key: 'syncing', icon: 'refresh-cw', label: 'Syncing now', ...unanswered },
         { key: 'failed', icon: 'flame', label: 'Last sync failed', ...unanswered },
@@ -105,7 +117,8 @@ function tiles(got: Got, now: number): Described {
         value: { kind: 'figure', text: `${healthy}/${apps.length}` },
         level: apps.some((app) => health(app).level === 'critical') ? 'critical' : healthy < apps.length ? 'warning' : 'healthy',
         detail: healthy < apps.length ? restByHealth(apps) : 'All healthy',
-        opens: lists(healthy < apps.length),
+        // (Those that aren't, where some aren't.)
+        opens: applicationsPage({ health: wordsOf(apps.filter((app) => health(app).level !== 'healthy'), (app) => health(app).word) }),
         ...cutIn(got),
       },
       {
@@ -118,6 +131,7 @@ function tiles(got: Got, now: number): Described {
           synced === apps.length
             ? 'All synced'
             : [outOfSync > 0 && `${outOfSync} out of sync`, unknown > 0 && `${unknown} unknown`].filter(Boolean).join(' · '),
+        opens: applicationsPage({ sync: wordsOf(apps.filter((app) => !sync(app).synced), (app) => sync(app).word) }),
         ...cutIn(got),
       },
       {
@@ -125,6 +139,7 @@ function tiles(got: Got, now: number): Described {
         icon: 'refresh-cw',
         label: 'Syncing now',
         value: { kind: 'figure', text: String(syncing.length) },
+        opens: applicationsPage({ operation: wordsOf(syncing, (app) => operationStatus(app)?.word) }),
         ...(syncing.length === 0
           ? { detail: 'Nothing is syncing' }
           : {
@@ -145,6 +160,7 @@ function tiles(got: Got, now: number): Described {
             : failing.length <= 2
               ? failing.map(nameOf).join(' · ')
               : counted(failing.length, 'application'),
+        opens: applicationsPage({ operation: wordsOf(failing, (app) => operationStatus(app)?.word) }),
         ...cutIn(got),
       },
     ],
@@ -216,8 +232,8 @@ function runningNow(got: Got, retry: () => void): Described {
             kind: 'status',
             level: 'progressing',
             word: op.phase === 'terminating' ? 'Terminating' : op.phase === 'running' ? 'Syncing' : 'Waiting',
+            ...(since ? { since } : {}),
           },
-          since ? { kind: 'age', time: since } : { kind: 'none' },
           where.where ? { kind: 'text', text: where.where } : { kind: 'none' },
           where.waitingOn ? { kind: 'text', text: where.waitingOn.slice(0, 253), mono: true } : { kind: 'none' },
         ],
@@ -233,7 +249,6 @@ function runningNow(got: Got, retry: () => void): Described {
       headings: true,
       columns: [
         { name: 'Operation', kind: 'status' },
-        { name: 'For', kind: 'age', width: 'text' },
         { name: 'Wave', kind: 'text', width: 'text' },
         { name: 'Waiting on', kind: 'text' },
       ],
@@ -247,11 +262,22 @@ function runningNow(got: Got, retry: () => void): Described {
   )
 }
 
-/** Each value and how many have it, the most first. */
-function tally(values: readonly string[]): { value: string; count: number }[] {
+/** What a count says of an application that says nothing there. */
+const NOT_SAID = 'Not set'
+
+/** Each value and how many have it, the most first; each opens the Applications page filtered to it. */
+function tally(values: readonly string[], filter?: string): { value: string; count: number; opens?: object }[] {
   const counts = new Map<string, number>()
   for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1)
-  return [...counts.entries()].map(([value, count]) => ({ value, count })).sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+  return [...counts.entries()]
+    .map(([value, count]) => ({
+      value,
+      count,
+      // (Where there's no value, there's nothing to filter by.)
+      // (Nor where it's longer than a link takes: it's counted all the same.)
+      ...(filter && value !== NOT_SAID && value.length <= LINK.value ? { opens: applicationsPage({ [filter]: [value] }) } : {}),
+    }))
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
 }
 
 function byState(got: Got): Described {
@@ -261,8 +287,8 @@ function byState(got: Got): Described {
     { key: 'by-state', title: 'By state' },
     h('Counts', {
       groups: [
-        { title: 'Health', rows: tally(apps.map((app) => health(app).word)) },
-        { title: 'Sync', rows: tally(apps.map((app) => sync(app).word)) },
+        { title: 'Health', rows: tally(apps.map((app) => health(app).word), 'health') },
+        { title: 'Sync', rows: tally(apps.map((app) => sync(app).word), 'sync') },
       ],
     }),
   )
@@ -275,8 +301,8 @@ function whereTheyRun(got: Got): Described {
     { key: 'where', title: 'Where they run' },
     h('Counts', {
       groups: [
-        { title: 'Clusters', code: true, rows: tally(apps.map((app) => cluster(app) || 'Not said')).slice(0, 50) },
-        { title: 'Namespaces', code: true, rows: tally(apps.map((app) => destination(app) || 'Not said')).slice(0, 50) },
+        { title: 'Clusters', code: true, rows: tally(apps.map((app) => cluster(app) || NOT_SAID), 'cluster').slice(0, 50) },
+        { title: 'Namespaces', code: true, rows: tally(apps.map((app) => destination(app) || NOT_SAID), 'namespace').slice(0, 50) },
       ],
     }),
   )

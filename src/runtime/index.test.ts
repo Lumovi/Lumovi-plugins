@@ -7,7 +7,16 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { checkoutAt, lumoviDoor } from '../../scripts/lumovi.mjs'
-import { field, h, plugin, type Box, type Handed, type Opened, type Page } from './index.ts'
+import {
+  field,
+  h,
+  plugin,
+  type Box,
+  type Handed,
+  type Opened,
+  type Page,
+  type WarningEvent,
+} from './index.ts'
 
 const lumovi = lumoviDoor(checkoutAt(process.env.LUMOVI_CHECKOUT))
 const { handler, list, oneOf, record, text } = lumovi.declare
@@ -286,6 +295,46 @@ test('each ask is one Lumovi reads, under a new number, and each answer goes to 
   )
   hear({ read: 1, objects: found })
   assert.equal(heard.length, 8)
+})
+
+test('an object’s warning events are read by its token, and each answer is its events now, until it ends or is stopped', async () => {
+  const { page, asks, hear } = await opened()
+  const heard: unknown[] = []
+  const pod = page
+    .events('tok-1')
+    .answered((events) => heard.push(['events', events]))
+    .failing((refused, said) => heard.push(['failing', refused, said]))
+  page.events('tok-2').ended((refused, said) => heard.push(['ended', refused, said]))
+  assert.deepEqual(asks, [
+    { read: 1, what: 'events', of: 'tok-1' },
+    { read: 2, what: 'events', of: 'tok-2' },
+  ])
+  const events: WarningEvent[] = [
+    {
+      reason: 'BackOff',
+      message: 'Back-off restarting failed container app',
+      count: 7,
+      first: '2026-10-14T06:00:00Z',
+      last: '2026-10-14T06:05:00Z',
+    },
+  ]
+  hear({ read: 1, events })
+  hear({ read: 1, failing: 'unreachable', said: 'The cluster didn’t answer.' })
+  hear({ read: 1, events: [] })
+  hear({ read: 2, ended: 'not-granted', said: 'This plugin’s file doesn’t ask to read this.' })
+  // (An answer of objects is no answer of events.)
+  hear({ read: 1, objects: [] })
+  assert.deepEqual(heard, [
+    ['events', events],
+    ['failing', 'unreachable', 'The cluster didn’t answer.'],
+    ['events', []],
+    ['ended', 'not-granted', 'This plugin’s file doesn’t ask to read this.'],
+  ])
+  pod.stop()
+  pod.stop()
+  assert.deepEqual(asks.slice(2), [{ stop: 1 }], 'a stopped read is stopped once')
+  hear({ read: 1, events })
+  assert.equal(heard.length, 4)
 })
 
 test('an ask of its tool’s server goes once, by tokens, and its answer is the JSON it answered', async () => {

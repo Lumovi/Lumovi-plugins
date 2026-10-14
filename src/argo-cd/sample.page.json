@@ -21,7 +21,13 @@
               "name": "Delete",
               "changes": true,
               "asks": true,
-              "note": "Deleting it also deletes what it deployed (it has Argo CD’s resources finalizer)."
+              "note": "Deleting it also deletes what it deployed, and waits until that’s gone."
+            },
+            {
+              "key": "auto-sync",
+              "name": "Turn auto-sync off",
+              "changes": true,
+              "asks": true
             },
             {
               "key": "refresh",
@@ -53,14 +59,14 @@
                 "text": "Synced"
               },
               "level": "healthy",
-              "detail": "3 of 3 resources"
+              "detail": "All 3 resources as in its source"
             },
             {
               "key": "revision",
               "icon": "git-branch",
-              "label": "Synced revision",
+              "label": "Revision",
               "value": {
-                "kind": "figure",
+                "kind": "words",
                 "text": "4f1c9aa"
               },
               "detail": "main"
@@ -96,10 +102,9 @@
         },
         "children": [
           {
-            "part": "Table",
+            "part": "Graph",
             "props": {
               "title": "Resources",
-              "headings": true,
               "columns": [
                 {
                   "name": "Sync",
@@ -110,18 +115,15 @@
                   "kind": "status"
                 }
               ],
-              "rows": [
+              "nodes": [
                 {
-                  "key": "apps/Deployment/shop/storefront",
-                  "lead": {
+                  "key": "app",
+                  "name": "storefront",
+                  "kind": "Application",
+                  "icon": "git-branch",
+                  "status": {
                     "level": "healthy",
-                    "name": "storefront",
-                    "under": "Deployment · shop"
-                  },
-                  "goes": {
-                    "list": "apps/Deployment",
-                    "name": "storefront",
-                    "namespace": "shop"
+                    "word": "Healthy"
                   },
                   "cells": [
                     {
@@ -137,16 +139,37 @@
                   ]
                 },
                 {
-                  "key": "/Service/shop/storefront",
-                  "lead": {
-                    "level": "healthy",
-                    "name": "storefront",
-                    "under": "Service · shop"
+                  "key": "r:/ConfigMap/shop/storefront-config",
+                  "name": "storefront-config",
+                  "kind": "ConfigMap",
+                  "goes": {
+                    "list": "/ConfigMap",
+                    "name": "storefront-config",
+                    "namespace": "shop"
                   },
+                  "cells": [
+                    {
+                      "kind": "status",
+                      "level": "healthy",
+                      "word": "Synced"
+                    },
+                    {
+                      "kind": "none"
+                    }
+                  ]
+                },
+                {
+                  "key": "r:/Service/shop/storefront",
+                  "name": "storefront",
+                  "kind": "Service",
                   "goes": {
                     "list": "/Service",
                     "name": "storefront",
                     "namespace": "shop"
+                  },
+                  "status": {
+                    "level": "healthy",
+                    "word": "Healthy"
                   },
                   "cells": [
                     {
@@ -158,6 +181,234 @@
                       "kind": "status",
                       "level": "healthy",
                       "word": "Healthy"
+                    }
+                  ]
+                },
+                {
+                  "key": "r:apps/Deployment/shop/storefront",
+                  "name": "storefront",
+                  "kind": "Deployment",
+                  "goes": {
+                    "list": "apps/Deployment",
+                    "name": "storefront",
+                    "namespace": "shop"
+                  },
+                  "status": {
+                    "level": "healthy",
+                    "word": "Healthy"
+                  },
+                  "cells": [
+                    {
+                      "kind": "status",
+                      "level": "healthy",
+                      "word": "Synced"
+                    },
+                    {
+                      "kind": "status",
+                      "level": "healthy",
+                      "word": "Healthy"
+                    }
+                  ]
+                },
+                {
+                  "key": "h:batch/Job/shop/db-migrate",
+                  "name": "db-migrate",
+                  "kind": "Job",
+                  "beside": "PreSync",
+                  "goes": {
+                    "list": "batch/Job",
+                    "name": "db-migrate",
+                    "namespace": "shop"
+                  },
+                  "status": {
+                    "level": "healthy",
+                    "word": "Succeeded"
+                  },
+                  "cells": [
+                    {
+                      "kind": "none"
+                    },
+                    {
+                      "kind": "status",
+                      "level": "healthy",
+                      "word": "Succeeded"
+                    }
+                  ]
+                },
+                {
+                  "key": "rs:t3",
+                  "name": "storefront-7d9f6c5b8",
+                  "kind": "ReplicaSet",
+                  "status": {
+                    "level": "progressing",
+                    "word": "2 of 3"
+                  },
+                  "cells": [
+                    {
+                      "kind": "none"
+                    },
+                    {
+                      "kind": "status",
+                      "level": "progressing",
+                      "word": "2 of 3"
+                    }
+                  ],
+                  "opens": "t3"
+                },
+                {
+                  "key": "pods:rs:t3",
+                  "name": "storefront-7d9f6c5b8-…",
+                  "kind": "3 Pods",
+                  "status": {
+                    "level": "warning",
+                    "word": "2 ready"
+                  },
+                  "cells": [
+                    {
+                      "kind": "none"
+                    },
+                    {
+                      "kind": "status",
+                      "level": "warning",
+                      "word": "2 ready"
+                    }
+                  ]
+                }
+              ],
+              "edges": [
+                {
+                  "from": "app",
+                  "to": "r:/ConfigMap/shop/storefront-config"
+                },
+                {
+                  "from": "app",
+                  "to": "r:/Service/shop/storefront"
+                },
+                {
+                  "from": "app",
+                  "to": "r:apps/Deployment/shop/storefront"
+                },
+                {
+                  "from": "app",
+                  "to": "h:batch/Job/shop/db-migrate"
+                },
+                {
+                  "from": "r:apps/Deployment/shop/storefront",
+                  "to": "rs:t3"
+                },
+                {
+                  "from": "rs:t3",
+                  "to": "pods:rs:t3"
+                }
+              ]
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "part": "Card",
+        "props": {
+          "title": "Last sync",
+          "about": "3 resources, 1 hook"
+        },
+        "children": [
+          {
+            "part": "Table",
+            "props": {
+              "title": "Last sync",
+              "headings": true,
+              "columns": [
+                {
+                  "name": "Wave",
+                  "kind": "number",
+                  "width": "narrow"
+                },
+                {
+                  "name": "Result",
+                  "kind": "status"
+                },
+                {
+                  "name": "Health",
+                  "kind": "status"
+                },
+                {
+                  "name": "Hook",
+                  "kind": "text",
+                  "width": "text"
+                },
+                {
+                  "name": "Message",
+                  "kind": "text",
+                  "width": "wide"
+                }
+              ],
+              "rows": [
+                {
+                  "key": "batch/Job/shop/db-migrate",
+                  "lead": {
+                    "name": "db-migrate",
+                    "under": "Job · shop"
+                  },
+                  "goes": {
+                    "list": "batch/Job",
+                    "name": "db-migrate",
+                    "namespace": "shop"
+                  },
+                  "cells": [
+                    {
+                      "kind": "none"
+                    },
+                    {
+                      "kind": "status",
+                      "level": "healthy",
+                      "word": "Succeeded"
+                    },
+                    {
+                      "kind": "none"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "PreSync"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "job.batch/db-migrate created"
+                    }
+                  ]
+                },
+                {
+                  "key": "/Service/shop/storefront",
+                  "lead": {
+                    "name": "storefront",
+                    "under": "Service · shop"
+                  },
+                  "goes": {
+                    "list": "/Service",
+                    "name": "storefront",
+                    "namespace": "shop"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "status",
+                      "level": "healthy",
+                      "word": "Synced"
+                    },
+                    {
+                      "kind": "status",
+                      "level": "healthy",
+                      "word": "Healthy"
+                    },
+                    {
+                      "kind": "none"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "service/storefront unchanged"
                     }
                   ]
                 },
@@ -174,12 +425,140 @@
                   },
                   "cells": [
                     {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
                       "kind": "status",
                       "level": "healthy",
                       "word": "Synced"
                     },
                     {
                       "kind": "none"
+                    },
+                    {
+                      "kind": "none"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "configmap/storefront-config unchanged"
+                    }
+                  ]
+                },
+                {
+                  "key": "apps/Deployment/shop/storefront",
+                  "lead": {
+                    "name": "storefront",
+                    "under": "Deployment · shop"
+                  },
+                  "goes": {
+                    "list": "apps/Deployment",
+                    "name": "storefront",
+                    "namespace": "shop"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "status",
+                      "level": "healthy",
+                      "word": "Synced"
+                    },
+                    {
+                      "kind": "status",
+                      "level": "healthy",
+                      "word": "Healthy"
+                    },
+                    {
+                      "kind": "none"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "deployment.apps/storefront configured"
+                    }
+                  ]
+                }
+              ],
+              "shows": 6
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "part": "Card",
+        "props": {
+          "title": "Problems"
+        },
+        "children": [
+          {
+            "part": "Table",
+            "props": {
+              "title": "Problems",
+              "leadHeading": "Where",
+              "headings": true,
+              "columns": [
+                {
+                  "name": "What",
+                  "kind": "status"
+                },
+                {
+                  "name": "What it says",
+                  "kind": "text",
+                  "width": "wide"
+                },
+                {
+                  "name": "When",
+                  "kind": "age",
+                  "width": "text"
+                }
+              ],
+              "rows": [
+                {
+                  "key": "e:t7/Unhealthy/2026-10-13T11:57:10Z",
+                  "lead": {
+                    "name": "storefront-7d9f6c5b8-x9vbn",
+                    "under": "Pod · shop"
+                  },
+                  "opens": "t7",
+                  "cells": [
+                    {
+                      "kind": "status",
+                      "level": "warning",
+                      "word": "Warning event"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "Unhealthy: Readiness probe failed: (the rest left out by Lumovi)"
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-13T11:59:40Z"
+                    }
+                  ]
+                },
+                {
+                  "key": "e:t7/BackOff/2026-10-13T11:58:00Z",
+                  "lead": {
+                    "name": "storefront-7d9f6c5b8-x9vbn",
+                    "under": "Pod · shop"
+                  },
+                  "opens": "t7",
+                  "cells": [
+                    {
+                      "kind": "status",
+                      "level": "warning",
+                      "word": "Warning event"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "BackOff: Back-off restarting failed container app in pod storefront-7d9f6c5b8-x9vbn_shop(9f1e)"
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-13T11:59:20Z"
                     }
                   ]
                 }
@@ -208,13 +587,23 @@
                   "kind": "text"
                 },
                 {
-                  "name": "Source path",
-                  "kind": "text"
+                  "name": "Took",
+                  "kind": "text",
+                  "width": "text"
                 },
                 {
-                  "name": "Deployed",
+                  "name": "By",
+                  "kind": "text",
+                  "width": "text"
+                },
+                {
+                  "name": "When",
                   "kind": "age",
                   "width": "text"
+                },
+                {
+                  "name": "Roll back",
+                  "kind": "button"
                 }
               ],
               "rows": [
@@ -226,17 +615,25 @@
                   "cells": [
                     {
                       "kind": "text",
-                      "text": "4f1c9aa",
+                      "text": "4f1c9aa main",
                       "mono": true,
                       "full": "4f1c9aa2b7e3d5c8f0a1b2c3d4e5f60718293a4b"
                     },
                     {
                       "kind": "text",
-                      "text": "apps/storefront"
+                      "text": "48s"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "Auto-sync"
                     },
                     {
                       "kind": "age",
                       "time": "2026-10-13T11:57:00Z"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "Current"
                     }
                   ]
                 },
@@ -248,22 +645,35 @@
                   "cells": [
                     {
                       "kind": "text",
-                      "text": "9b2e771",
+                      "text": "9b2e771 main",
                       "mono": true,
                       "full": "9b2e771c0d4e5f60718293a4b4f1c9aa2b7e3d5c"
                     },
                     {
                       "kind": "text",
-                      "text": "apps/storefront"
+                      "text": "1m 12s"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "peter"
                     },
                     {
                       "kind": "age",
                       "time": "2026-10-11T12:00:00Z"
+                    },
+                    {
+                      "kind": "button",
+                      "key": "rollback",
+                      "name": "Roll back",
+                      "changes": true,
+                      "asks": true,
+                      "off": "Auto-sync is on, so Argo CD would sync it straight back."
                     }
                   ]
                 }
               ],
-              "shows": 6
+              "shows": 6,
+              "onPress": "h2"
             },
             "children": []
           }

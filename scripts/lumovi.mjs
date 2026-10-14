@@ -57,7 +57,7 @@ export function lumoviDoor(checkout) {
     "export { DoorPage, DOOR_LIMITS, ROOT } from './src/shared/plugin-door.ts'",
     "export { DECLARED } from './src/shared/kit/parts.ts'",
     "export * as declare from './src/shared/kit/declare.ts'",
-    "export { granted, handedWhole, kindAsked, PageReads, picked, pickedRefusal, READ_LIMITS, READ_REFUSED, readAsk, resolvedAs } from './src/shared/plugin-reads.ts'",
+    "export { granted, handedEvent, handedWhole, kindAsked, PageReads, picked, pickedRefusal, READ_LIMITS, READ_REFUSED, readAsk, resolvedAs } from './src/shared/plugin-reads.ts'",
     "export { callOf, swapFor, Tokens } from './src/shared/plugin-presses.ts'",
     "export { ownKinds } from './src/shared/plugins.ts'",
     "export { PLUGIN_SINCE } from './src/shared/plugin-since.ts'",

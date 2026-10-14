@@ -89,6 +89,32 @@ test('a read asked for usage is answered as Lumovi answers it: each object’s, 
   assert.deepEqual(refused.problems, ['it asks for the usage of /Pod, which its file doesn’t say it reads'])
 })
 
+test('an object’s events are answered as Lumovi hands them: its warnings, newest first, cut where Lumovi cuts them, where its file reads them', async () => {
+  // Its pods, then the first one's events, by its token: each as a row.
+  const ask = JSON.stringify({ read: 1, what: 'list', kind: '/Pod', namespace: 'shop' })
+  const shown = `post(${JSON.stringify(ask)}); listen((said) => { const s = JSON.parse(said); if (s.read === 1 && s.objects) post(JSON.stringify({ read: 2, what: 'events', of: s.objects[0].token })); if (s.read === 2) post(JSON.stringify({ commit: [['make', 9, 'Table', { title: s.events ? s.events.map((e) => e.reason + ': ' + e.message).join(' | ') : 'ended ' + s.ended, columns: [], headings: false, rows: [] }], ['put', 0, 9]] })) })`
+  const events = {
+    '/Pod': {
+      'shop/api': [
+        { type: 'Warning', reason: 'BackOff', message: 'Back-off restarting failed container api', count: 3, firstTimestamp: '2026-10-13T11:00:00Z', lastTimestamp: '2026-10-13T11:50:00Z' },
+        { type: 'Warning', reason: 'Unhealthy', message: 'Readiness probe failed: token=secret', count: 9, firstTimestamp: '2026-10-13T11:10:00Z', lastTimestamp: '2026-10-13T11:55:00Z' },
+        { type: 'Normal', reason: 'Pulled', message: 'Container image already present', count: 1, firstTimestamp: '2026-10-13T11:00:00Z', lastTimestamp: '2026-10-13T11:58:00Z' },
+      ],
+    },
+  }
+  const reads = (also) =>
+    reader.parse(readFileSync(join(TINY, 'plugin.yaml'), 'utf8').replace(', usage: true', `, usage: true${also}`), 'tiny.yaml').plugin
+  const read = await samplePage({ door, plugin: reads(', events: true'), code: opened(shown), sample: { ...sample, events } })
+  assert.deepEqual(read.problems, [])
+  assert.equal(
+    read.page[0].props.title,
+    'Unhealthy: Readiness probe failed: (the rest left out by Lumovi) | BackOff: Back-off restarting failed container api',
+  )
+  // A file that doesn't say it reads a kind's events: the read fails the run, as an ungranted one does.
+  const refused = await samplePage({ door, plugin: reads(''), code: opened(shown), sample: { ...sample, events } })
+  assert.deepEqual(refused.problems, ['it asks for the events of a Pod, which its file doesn’t say it reads'])
+})
+
 test('a list picked by its objects’ fields and labels is answered with those that have them, by what its file grants', async () => {
   // Its answer, said as a Table's title: the names it was handed, or how it ended.
   const picking = (picked) => {

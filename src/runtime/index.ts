@@ -98,6 +98,30 @@ export interface Read {
   stop(): void
 }
 
+/**
+ * A warning event of an object, as Lumovi hands it: why, what it says (cut where it would quote
+ * what only a person may read, and at 500 characters), how many times, and when first and last.
+ */
+export interface WarningEvent {
+  readonly reason: string
+  readonly message: string
+  readonly count: number
+  readonly first: string
+  readonly last: string
+}
+
+/** The warning events of an object a read brought, newest first, read again as it is. */
+export interface EventsRead {
+  /** Each answer: its warning events now. */
+  answered(hear: (events: readonly WarningEvent[]) => void): EventsRead
+  /** The read ended: why, as a code, and Lumovi's words. Nothing more comes of it. */
+  ended(hear: (refused: string, said: string) => void): EventsRead
+  /** It's failing for now (it had answers): Lumovi tries again. */
+  failing(hear: (refused: string, said: string) => void): EventsRead
+  /** No more of it. */
+  stop(): void
+}
+
 /** An ask answered once: its tool's server's answer, as JSON. */
 export interface Asked {
   /** What it answered, as JSON. */
@@ -138,8 +162,8 @@ export interface Page {
   list(kind: string, namespace?: string, reading?: ListReading): Read
   /** Reads one object. */
   object(kind: string, namespace: string | undefined, name: string, reading?: Reading): Read
-  /** Reads the events of an object a read brought, by its token. */
-  events(token: string): Read
+  /** Reads the warning events of an object a read brought, by its token (its file must say so). */
+  events(token: string): EventsRead
   /** Asks every list read again now (a person's "refresh"). */
   refresh(): void
   /**
@@ -373,7 +397,7 @@ function run(box: Box, start: (page: Page) => void): void {
   /** Asks, under a new number: what's heard of it. */
   const asking = (said: object) => {
     const number = nextRead++
-    const hearing: Hearing = { answered: [], json: [], ended: [], failing: [] }
+    const hearing: Hearing = { answered: [], json: [], events: [], ended: [], failing: [] }
     reads.set(number, hearing)
     ask({ read: number, ...said })
     return { number, hearing }
@@ -411,7 +435,19 @@ function run(box: Box, start: (page: Page) => void): void {
           read({ what: 'list', kind, ...within(namespace), ...asked(reading), ...picked(reading) }),
         object: (kind, namespace, name, reading) =>
           read({ what: 'object', kind, ...within(namespace), name, ...asked(reading) }),
-        events: (token) => read({ what: 'events', of: token }),
+        events: (token) => {
+          const { number, hearing } = asking({ what: 'events', of: token })
+          const handle: EventsRead = {
+            answered: (hear) => (hearing.events.push(hear), handle),
+            ended: (hear) => (hearing.ended.push(hear), handle),
+            failing: (hear) => (hearing.failing.push(hear), handle),
+            stop: () => {
+              if (!reads.delete(number)) return
+              ask({ stop: number })
+            },
+          }
+          return handle
+        },
         refresh: () => ask({ refresh: true }),
         server: (within, path, fills) => {
           const { hearing } = asking({
@@ -450,6 +486,8 @@ function run(box: Box, start: (page: Page) => void): void {
         // (Answered once: the read is over.)
         reads.delete(said.read)
         for (const hear of hearing.json) hear(said.json)
+      } else if (Array.isArray(said.events)) {
+        for (const hear of hearing.events) hear(said.events as WarningEvent[])
       } else if (Array.isArray(said.objects)) {
         const none = said.noUsage === 'unmeasured' || said.noUsage === 'not-allowed' ? said.noUsage : undefined
         const about: Answered = {
@@ -480,6 +518,7 @@ const picked = (reading: ListReading | undefined) => ({
 interface Hearing {
   answered: ((objects: readonly Handed[], said: Answered) => void)[]
   json: ((json: unknown) => void)[]
+  events: ((events: readonly WarningEvent[]) => void)[]
   ended: ((refused: string, said: string) => void)[]
   failing: ((refused: string, said: string) => void)[]
 }

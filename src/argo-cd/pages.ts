@@ -16,17 +16,21 @@ import {
   conditionLevel,
   conditions,
   deploysTo,
+  destination,
   detail,
   ended,
   health,
   history,
+  hooksOf,
   lastSync,
   nameOf,
   onThisCluster,
   operation,
+  operationStatus,
   projectOf,
   refreshing,
   resources,
+  retryOf,
   running,
   secondStatus,
   severalSources,
@@ -35,10 +39,12 @@ import {
   step,
   steps,
   sync,
+  syncOptionsOf,
   syncResults,
   syncedRevision,
   syncingTo,
   targetRevision,
+  toPrune,
   took,
   whenDeleted,
   type Level,
@@ -108,18 +114,35 @@ function revisionCell(revision: string, ref?: string) {
 
 // Every Application, in one table
 
-/** Its operation, as a cell: one running, or how the last ended where it didn't succeed. */
-function operationCell(object: Object_) {
-  const op = operation(object)
-  if (op) {
-    const word = op.phase === 'terminating' ? 'Terminating' : op.phase === 'running' ? 'Syncing' : 'Waiting'
-    return { kind: 'status', level: 'progressing', word }
-  }
-  const last = ended(object)
-  if (last?.how === 'terminated') return { kind: 'status', level: 'neutral', word: 'Terminated' }
-  if (last?.how === 'failed') return { kind: 'status', level: 'critical', word: 'Failed' }
-  if (last?.how === 'error') return { kind: 'status', level: 'critical', word: 'Error' }
-  return { kind: 'none' }
+const operationCell = (object: Object_) => {
+  const status = operationStatus(object)
+  return status ? { kind: 'status', ...status } : { kind: 'none' }
+}
+
+/** The Applications page's filters: what a row gives each, and the Overview's links set. */
+export const FILTERS = [
+  { key: 'health', name: 'Health' },
+  { key: 'sync', name: 'Sync' },
+  { key: 'operation', name: 'Operation' },
+  { key: 'project', name: 'Project' },
+  { key: 'cluster', name: 'Cluster', more: true },
+  { key: 'namespace', name: 'Namespace', more: true },
+  { key: 'auto-sync', name: 'Auto-sync', more: true },
+] as const
+
+/** An application's values for the page's filters (one longer than a table's text: none for it). */
+function facetsOf(object: Object_) {
+  const status = operationStatus(object)
+  const facets = [
+    { filter: 'health', value: health(object).word },
+    { filter: 'sync', value: sync(object).word },
+    ...(status ? [{ filter: 'operation', value: status.word }] : []),
+    { filter: 'project', value: projectOf(object) },
+    ...(cluster(object) ? [{ filter: 'cluster', value: cluster(object) }] : []),
+    ...(destination(object) ? [{ filter: 'namespace', value: destination(object) }] : []),
+    { filter: 'auto-sync', value: autoSync(object).on ? 'On' : 'Off' },
+  ]
+  return facets.filter(({ value }) => value.length <= 253)
 }
 
 /** The plugin's own Applications page: every column of each, worst first. */
@@ -141,6 +164,7 @@ export function applications(got: Got, retry: () => void): Described {
       return {
         key: token,
         lead: { level, name: nameOf(object), beside: projectOf(object), under: source(object) },
+        facets: facetsOf(object),
         cells: [
           { kind: 'status', level, word },
           { kind: 'status', level: synced.level, word: synced.word },
@@ -161,6 +185,10 @@ export function applications(got: Got, retry: () => void): Described {
       title: 'Applications',
       headings: true,
       nameSorts: true,
+      filters: FILTERS,
+      search: true,
+      // (Ticked, its file's Sync and Refresh are Lumovi's to offer and do: the page is told nothing.)
+      ticks: true,
       columns: [
         { name: 'Health', kind: 'status' },
         { name: 'Sync', kind: 'status' },
@@ -896,8 +924,60 @@ export function propose(page: Page, pressed: Pressed, token: string, object: Obj
     )
     return
   }
+  proposeSync(page, token, object)
+}
+
+/** Items in words: "a", "a and b", "a, b and c". */
+const inWords = (items: readonly string[]) => (items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`)
+
+/** A dialog's words: a label's 40 characters, a hint's 160. */
+const LABEL_MOST = 40
+const HINT_MOST = 160
+const cut = (said: string, most: number) => ([...said].length > most ? `${[...said].slice(0, most - 1).join('')}…` : said)
+
+/** `items` named in words between `lead` and `end`, as many as fit in `most`, the rest "and 3 more". */
+function fitted(lead: string, items: readonly string[], end: string, most: number): string | undefined {
+  for (let shown = items.length; shown > 0; shown--) {
+    const rest = items.length - shown
+    const said = `${lead}${inWords([...items.slice(0, shown), ...(rest > 0 ? [`${rest} more`] : [])])}${end}`
+    if ([...said].length <= most) return said
+  }
+  return undefined
+}
+
+/** Argo CD's sync options the dialog offers by name, in its order: the Application's own are on to start. */
+const SYNC_OPTIONS = [
+  { label: 'Server-side apply', value: 'ServerSideApply=true' },
+  { label: 'Prune last', value: 'PruneLast=true' },
+  { label: 'Only what’s out of sync', value: 'ApplyOutOfSyncOnly=true' },
+  { label: 'Create the namespace', value: 'CreateNamespace=true' },
+]
+
+/** The most resources the dialog offers to choose from (Lumovi's): past them, those out of sync first. */
+const RESOURCES_MOST = 200
+
+/**
+ * Sync…: every option Argo CD's own sync has, in its order. It starts from the Application: its
+ * revision, its own sync options and retry; prune, dry run, apply only and force off; and every
+ * resource, or, with only some, those out of sync. What does harm (prune, force, only some) is
+ * the file's to say, and Lumovi's to draw; the page adds what a prune would delete.
+ */
+function proposeSync(page: Page, token: string, object: Object_): void {
   // (An application of several sources is synced to what each tracks: no one revision to set.)
   const several = severalSources(object)
+  const tracks = targetRevision(object)
+  const hooks = hooksOf(object)
+  const own = syncOptionsOf(object)
+  const options = [...SYNC_OPTIONS, ...own.filter((option) => !SYNC_OPTIONS.some(({ value }) => value === option)).map((option) => ({ label: cut(option, LABEL_MOST), value: option }))]
+  const retry = retryOf(object)
+  const within = (value: number | undefined, min: number, max: number) => (value !== undefined && value >= min && value <= max ? value : undefined)
+  const where = destination(object)
+  const all = resources(object)
+  const outOfSync = (resource: Resource) => resource.sync?.word === 'Out of sync'
+  const offered = all.length > RESOURCES_MOST ? [...all.filter(outOfSync), ...all.filter((each) => !outOfSync(each))].slice(0, RESOURCES_MOST) : all
+  const differ = all.filter(outOfSync).length
+  const pruned = toPrune(object)
+  const prunes = fitted(pruned.length === 1 ? 'This one: ' : `These ${pruned.length}: `, pruned, '.', HINT_MOST)
   void page.propose(
     {
       action: 'patch',
@@ -908,7 +988,14 @@ export function propose(page: Page, pressed: Pressed, token: string, object: Obj
           sync: {
             ...(several ? {} : { revision: field('revision') }),
             prune: field('prune'),
-            syncStrategy: field('strategy'),
+            dryRun: field('dryRun'),
+            syncStrategy: field('applyOnly'),
+            syncOptions: field('syncOptions'),
+            ...(offered.length > 0 ? { resources: field('resources') } : {}),
+          },
+          retry: {
+            limit: field('retryLimit'),
+            backoff: { duration: field('retryDuration'), factor: field('retryFactor'), maxDuration: field('retryMaxDuration') },
           },
         },
       },
@@ -923,23 +1010,71 @@ export function propose(page: Page, pressed: Pressed, token: string, object: Obj
                 kind: 'text' as const,
                 key: 'revision',
                 label: 'Revision',
-                hint: 'A branch, a tag or a commit. Empty syncs to what the application tracks.',
+                hint: cut(`A branch, a tag or a commit. Empty syncs to what it tracks: ${tracks}.`, HINT_MOST),
                 most: 256,
-                value: targetRevision(object),
+                value: tracks,
               },
             ]),
-        { kind: 'switch', key: 'prune', label: 'Prune', hint: 'Delete resources that are no longer in its source.', value: false },
+        { kind: 'section', label: 'How' },
+        { kind: 'switch', key: 'prune', label: 'Prune', hint: 'Delete what’s no longer in its source.', value: false },
+        { kind: 'switch', key: 'dryRun', label: 'Dry run', hint: 'Change nothing: Argo CD says what it would do.', value: false, verb: 'Dry run' },
         {
-          kind: 'choice',
-          key: 'strategy',
-          label: 'Strategy',
-          options: [
-            { label: 'Apply', value: { apply: {} } },
-            { label: 'Hook', value: { hook: {} } },
-          ],
-          value: 1,
+          kind: 'switch',
+          key: 'applyOnly',
+          label: 'Apply only',
+          hint: fitted('Skip hooks: ', hooks, hooks.length === 1 ? ' doesn’t run.' : ' don’t run.', HINT_MOST) ?? 'Skip hooks: apply what’s in its source, and nothing else.',
+          value: false,
+          values: [{ hook: { force: field('force') } }, { apply: { force: field('force') } }],
         },
+        { kind: 'switch', key: 'force', label: 'Force', hint: 'Delete and recreate what can’t be changed in place.', value: false },
+        { kind: 'section', label: 'Sync options' },
+        {
+          kind: 'picks',
+          key: 'syncOptions',
+          label: 'On for this sync',
+          hint: 'Its own are on to start. Prune last deletes only once the rest is synced and healthy.',
+          options,
+          value: options.flatMap((option, i) => (own.includes(option.value) ? [i] : [])),
+        },
+        { kind: 'section', label: 'If it fails' },
+        {
+          kind: 'switch',
+          key: 'retry',
+          label: 'Retry',
+          hint: 'Try again, waiting longer each time.',
+          value: retry !== undefined,
+          shows: ['retryLimit', 'retryDuration', 'retryFactor', 'retryMaxDuration'],
+        },
+        { kind: 'number', key: 'retryLimit', label: 'Times', hint: 'How many times it tries again.', min: 1, max: 100, value: within(retry?.limit, 1, 100) ?? 2 },
+        { kind: 'text', key: 'retryDuration', label: 'First wait', hint: 'Before it tries again the first time: 5s, 2m or 1h.', most: 32, required: true, value: retry?.duration ?? '5s' },
+        { kind: 'number', key: 'retryFactor', label: 'Each wait after', hint: 'How many times the one before it.', min: 1, max: 10, value: within(retry?.factor, 1, 10) ?? 2 },
+        { kind: 'text', key: 'retryMaxDuration', label: 'Longest wait', hint: 'No wait is longer than this.', most: 32, required: true, value: retry?.maxDuration ?? '3m' },
+        ...(offered.length === 0
+          ? []
+          : [
+              { kind: 'section' as const, label: 'Resources' },
+              { kind: 'switch' as const, key: 'some', label: 'Only some resources', hint: 'Sync the ones chosen, and leave the rest as they are.', value: false, shows: ['resources'] },
+              {
+                kind: 'picks' as const,
+                key: 'resources',
+                label: 'Resources',
+                hint: cut(
+                  [
+                    differ === 0 ? 'None is out of sync.' : `${differ} of ${all.length} out of sync, chosen to start.`,
+                    ...(all.length > offered.length ? [`The first ${offered.length}, out of sync first.`] : []),
+                  ].join(' '),
+                  HINT_MOST,
+                ),
+                options: offered.map((each) => ({
+                  label: cut(`${each.kind} ${each.namespace && each.namespace !== where ? `${each.namespace}/` : ''}${each.name}`, LABEL_MOST),
+                  value: { group: each.group, kind: each.kind, ...(each.namespace ? { namespace: each.namespace } : {}), name: each.name },
+                })),
+                value: offered.flatMap((each, i) => (outOfSync(each) ? [i] : [])),
+              },
+            ]),
       ],
+      // (What a prune would delete, under the file's own words for it.)
+      ...(prunes ? { harm: [{ path: 'operation.sync.prune', detail: prunes }] } : {}),
     },
   )
 }

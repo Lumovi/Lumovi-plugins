@@ -4,7 +4,7 @@ kind: Plugin
 metadata:
   name: argo-cd
 spec:
-  version: 1.4.0
+  version: 1.5.0
   needs:
     lumovi: 1.22.0
   groups:
@@ -22,7 +22,7 @@ spec:
   # view's Sync, Terminate sync and Refresh, below.)
   pages:
     - { id: overview, title: Overview }
-    - { id: applications, title: All applications }
+    - { id: applications, title: Applications, takes: { group: argoproj.io, kind: Application } }
   tabs:
     - { id: application, title: Argo CD, kinds: [{ group: argoproj.io, kind: Application }] }
   # Of Kubernetes' own, ReplicaSets and Pods: who made each and how ready it is, never what they
@@ -55,7 +55,43 @@ spec:
         ]
       events: true
   changes:
-    - { group: argoproj.io, kind: Application, actions: [patch, delete] }
+    - group: argoproj.io
+      kind: Application
+      actions: [patch, delete]
+      # What a sync from the page does harm with: drawn by Lumovi in red, and named on its button,
+      # whatever the code says; never in a dry run, which changes nothing.
+      harm:
+        - path: operation.sync.prune
+          is: true
+          unless: { path: operation.sync.dryRun, is: true }
+          says: Deletes what’s no longer in its source.
+          verb: prune
+        - path: operation.sync.syncStrategy.hook.force
+          is: true
+          unless: { path: operation.sync.dryRun, is: true }
+          says: Deletes and recreates what can’t be changed in place, restarting their Pods.
+          verb: force
+        - path: operation.sync.syncStrategy.apply.force
+          is: true
+          unless: { path: operation.sync.dryRun, is: true }
+          says: Deletes and recreates what can’t be changed in place, restarting their Pods.
+          verb: force
+        - path: operation.sync.resources
+          set: true
+          unless: { path: operation.sync.dryRun, is: true }
+          says: Syncs only the ones chosen. Hooks don’t run, and History gets no entry for it.
+          verb: Sync
+        # (Sync options the dialog doesn't name, which an Application of its own may have.)
+        - path: operation.sync.syncOptions
+          contains: Replace=true
+          unless: { path: operation.sync.dryRun, is: true }
+          says: Writes each resource whole, dropping what anything else set on it.
+          verb: replace
+        - path: operation.sync.syncOptions
+          contains: Force=true
+          unless: { path: operation.sync.dryRun, is: true }
+          says: Deletes and recreates what can’t be changed in place, restarting their Pods.
+          verb: force
   # Lumovi's own lists a resource's row on the tab goes to, at that one object: never read, never
   # changed (src/argo-cd/pages.ts's OPENS, the same kinds).
   opens:
@@ -124,12 +160,14 @@ spec:
           kind: Namespace
           objectName: '{{ .spec.destination.namespace }}'
       # In Lumovi's own bar and a row's menu, wherever it is: Sync and Terminate sync ask first, and
-      # Refresh runs at once. (The tab's Sync… also lets the person pick a revision, prune and the
-      # strategy.)
+      # Refresh runs at once. Sync and Refresh are also done to the rows ticked on the Applications
+      # page, asked once. (The tab's Sync… has every option Argo CD's own sync has.)
       actions:
         - name: Sync
           icon: refresh-cw
           primary: true
+          # Done to several: each syncs to the revision it tracks, so Revision isn't asked there.
+          bulk: true
           # Argo CD starts an operation it finds on the application; none may be on it already.
           when: { path: .operation, exists: false }
           # While one is: busy where it was, with how long once Argo CD has started it.
@@ -142,11 +180,38 @@ spec:
               since: .status.operationState.startedAt
             - when: { path: .operation, exists: true }
               word: Syncing
-          confirm: Argo CD brings {{ .metadata.name }} in line with its source, at the revision it tracks. To pick a revision, prune, or choose a strategy, use Sync… on its Argo CD tab.
+          # How it ended, once it's no longer busy: Argo CD's phase, and its message beside it.
+          ends:
+            path: .status.operationState.phase
+            values:
+              - { value: Succeeded, word: Succeeded, level: healthy }
+              - { value: Failed, word: Failed, level: critical }
+              - { value: Error, word: Error, level: critical }
+            message: .status.operationState.message
+          inputs:
+            - name: revision
+              # (An input has no hint: its label says what empty means.)
+              label: 'Revision (empty: the one it tracks)'
+              default: ''
+              bulk: false
+            - name: prune
+              label: Prune
+              type: switch
+              default: 'false'
+            - name: strategy
+              label: Strategy
+              type: choice
+              choices:
+                - { label: Hook, value: { hook: {} } }
+                - { label: Apply, value: { apply: {} } }
+          confirm: Argo CD brings {{ .metadata.name }} in line with its source. Its Argo CD tab’s Sync… has every other option.
           patch:
             operation:
               initiatedBy: { username: lumovi }
-              sync: { syncStrategy: { hook: {} } }
+              sync:
+                revision: '{{ input.revision }}'
+                prune: '{{ input.prune }}'
+                syncStrategy: '{{ input.strategy }}'
           done: Started syncing {{ .metadata.name }}
         # Terminate sync: Argo CD's own Terminate for a sync that runs (it sets the phase, on the
         # Application itself: its kind has no status subresource), and, for one asked for that Argo
@@ -176,10 +241,19 @@ spec:
           confirmTitle: Terminate {{ .metadata.name }}’s sync?
           patch: { operation: null }
           done: Took back {{ .metadata.name }}’s sync before it started
+        # At once, a normal refresh; for several, Normal or Hard asked once.
         - name: Refresh
           runs: at-once
           icon: radar
+          bulk: true
+          inputs:
+            - name: how
+              label: How
+              type: choice
+              choices:
+                - { label: Normal, value: normal }
+                - { label: Hard, value: hard }
           patch:
             metadata:
-              annotations: { argocd.argoproj.io/refresh: normal }
+              annotations: { argocd.argoproj.io/refresh: '{{ input.how }}' }
           done: Asked Argo CD to compare {{ .metadata.name }} with its source

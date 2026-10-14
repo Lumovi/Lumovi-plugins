@@ -9,14 +9,35 @@
     "verb": "Sync",
     "fields": [
       "revision (text)",
+      "How (section)",
       "prune (switch)",
-      "strategy (choice)"
+      "dryRun (switch)",
+      "applyOnly (switch)",
+      "force (switch)",
+      "Sync options (section)",
+      "syncOptions (picks)",
+      "If it fails (section)",
+      "retry (switch)",
+      "retryLimit (number)",
+      "retryDuration (text)",
+      "retryFactor (number)",
+      "retryMaxDuration (text)",
+      "Resources (section)",
+      "some (switch)",
+      "resources (picks)"
     ],
     "writes": [
       "operation.initiatedBy.username",
+      "operation.retry.backoff.duration",
+      "operation.retry.backoff.factor",
+      "operation.retry.backoff.maxDuration",
+      "operation.retry.limit",
+      "operation.sync.dryRun",
       "operation.sync.prune",
+      "operation.sync.resources",
       "operation.sync.revision",
-      "operation.sync.syncStrategy (apply or hook)"
+      "operation.sync.syncOptions",
+      "operation.sync.syncStrategy (apply.force or hook.force)"
     ],
     "change": {
       "body": {
@@ -27,9 +48,13 @@
           "sync": {
             "revision": "main",
             "prune": false,
+            "dryRun": false,
             "syncStrategy": {
-              "hook": {}
-            }
+              "hook": {
+                "force": false
+              }
+            },
+            "syncOptions": []
           }
         }
       }

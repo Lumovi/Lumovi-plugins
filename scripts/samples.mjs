@@ -125,7 +125,7 @@ function labelled(object, term) {
  * `operation.sync.syncStrategy (apply or hook)`), whatever the person goes on to pick.
  */
 export function writesOf(proposed) {
-  const fields = new Map(proposed.fields.map((field) => [field.key, field]))
+  const fields = new Map(proposed.fields.flatMap((field) => (field.kind === 'section' ? [] : [[field.key, field]])))
   const named = (value) =>
     typeof value === 'object' && value !== null && !Array.isArray(value) && Object.keys(value).length === 1 && typeof value.field === 'string'
       ? value.field
@@ -133,7 +133,8 @@ export function writesOf(proposed) {
   // (An empty object is a value written, `{ apply: {} }`'s `apply`: a leaf, as a text is.)
   const flat = (value) => typeof value !== 'object' || value === null || Array.isArray(value) || Object.keys(value).length === 0
   const leaves = (value, at, into) => {
-    if (flat(value)) return void into.push(at)
+    // (A place in an option's value is a leaf: another field's, filled in there.)
+    if (flat(value) || named(value) !== undefined) return void into.push(at)
     for (const [key, item] of Object.entries(value)) leaves(item, at ? `${at}.${key}` : key, into)
   }
   const writes = []
@@ -145,7 +146,9 @@ export function writesOf(proposed) {
       return
     }
     const field = fields.get(key)
-    const options = field?.kind === 'choice' ? field.options.map(({ value: option }) => option) : []
+    // (A switch with values of its own fills one of two, as a choice of two would.)
+    const options =
+      field?.kind === 'choice' ? field.options.map(({ value: option }) => option) : field?.kind === 'switch' && field.values ? field.values : []
     if (options.every(flat)) return void writes.push(at)
     // What each option writes under the field's place ('' for the place itself), and what all do.
     const per = options.map((option) => {
@@ -511,8 +514,9 @@ async function runSample({ door, changes, plugin, code, sample }) {
       action: proposed.action,
       ...(target ? { target } : { kind: proposed.kind }),
       ...(proposed.verb === undefined ? {} : { verb: proposed.verb }),
-      fields: proposed.fields.map(({ key, kind: of }) => `${key} (${of})`),
+      fields: proposed.fields.map(({ key, kind: of, label }) => (of === 'section' ? `${label} (section)` : `${key} (${of})`)),
       writes: writesOf(proposed),
+      ...(proposed.harm === undefined ? {} : { harm: proposed.harm }),
       change: made,
     })
     answer(proposed.id, pressed.answer)
@@ -704,6 +708,12 @@ const FILE_KEYS = [
   'links',
   'logs',
   'server',
+  'takes',
+  'bulk',
+  'ends',
+  'switch',
+  'choices',
+  'harm',
 ]
 
 /** Whether version `a` is older than `b`: three numbers each. */
@@ -740,6 +750,8 @@ export function needsProblems({ plugin, used, since, version }) {
   }
   const [major, minor] = version.split('.').map(Number)
   const first = (at) => (at === 'next' ? `${major}.${minor + 1}.0` : at)
+  const actions = (plugin.views ?? []).flatMap((view) => view.actions ?? [])
+  const inputs = actions.flatMap((action) => action.inputs ?? [])
   const uses = [
     ...['pages', 'tabs', 'commands']
       .filter((what) => plugin.added[what].length > 0)
@@ -755,6 +767,12 @@ export function needsProblems({ plugin, used, since, version }) {
     ...((plugin.links ?? []).length > 0 ? [['its file’s links', since.file.links]] : []),
     ...(plugin.logs !== undefined ? [['its file’s logs', since.file.logs]] : []),
     ...(plugin.server !== undefined ? [['its file’s server', since.file.server]] : []),
+    ...(plugin.added.pages.some((page) => page.takes !== undefined) ? [['a page’s takes', since.file.takes]] : []),
+    ...(actions.some((action) => action.bulk === true) ? [['an action’s bulk', since.file.bulk]] : []),
+    ...(actions.some((action) => action.ends !== undefined) ? [['an action’s ends', since.file.ends]] : []),
+    ...(inputs.some((input) => input.type === 'switch') ? [['an input that’s a switch', since.file.switch]] : []),
+    ...(inputs.some((input) => input.choices !== undefined) ? [['an input’s choices', since.file.choices]] : []),
+    ...((plugin.changes ?? []).some((kind) => kind.harm !== undefined) ? [['a change’s harm', since.file.harm]] : []),
     ...ACTION_KEYS.filter((key) =>
       (plugin.views ?? []).some((view) => (view.actions ?? []).some((action) => action[key] !== undefined)),
     ).map((key) => [`an action’s ${key}`, since.action?.[key]]),

@@ -213,6 +213,38 @@ test('the Lumovi a plugin needs carries all it uses of the door: what its file s
   assert.deepEqual(manages, [
     'it needs Lumovi 1.23.0, and a view’s manages came in Lumovi 1.27.0: its needs.lumovi should be 1.27.0 at least',
   ])
+  // A page that takes a kind's tab: what brought that.
+  const takes = needsProblems({
+    plugin: {
+      ...plugin,
+      added: { ...plugin.added, pages: [{ id: 'toys', title: 'Toys', takes: 'Toy.tiny.example.com' }] },
+      needs: { lumovi: '1.23.0' },
+    },
+    used: { read: [], parts: [], kinds: [] },
+    since: { ...since, file: { ...since.file, takes: '1.28.0' } },
+    version: '1.30.0',
+  })
+  assert.deepEqual(takes, [
+    'it needs Lumovi 1.23.0, and a page’s takes came in Lumovi 1.28.0: its needs.lumovi should be 1.28.0 at least',
+  ])
+  // An action done to ticked rows, how its work ends, its switch and labelled choices; what a change harms.
+  for (const [said, key, what] of [
+    [{ views: [{ actions: [{ bulk: true }] }] }, 'bulk', 'an action’s bulk'],
+    [{ views: [{ actions: [{ ends: { path: '.status.phase', values: [] } }] }] }, 'ends', 'an action’s ends'],
+    [{ views: [{ actions: [{ inputs: [{ name: 'prune', type: 'switch' }] }] }] }, 'switch', 'an input that’s a switch'],
+    [{ views: [{ actions: [{ inputs: [{ name: 'how', type: 'choice', choices: [] }] }] }] }, 'choices', 'an input’s choices'],
+    [{ changes: [{ kind: 'argoproj.io/Application', actions: ['patch'], harm: [] }] }, 'harm', 'a change’s harm'],
+  ]) {
+    assert.deepEqual(
+      needsProblems({
+        plugin: { ...plugin, ...said, needs: { lumovi: '1.23.0' } },
+        used: { read: [], parts: [], kinds: [] },
+        since: { ...since, file: { ...since.file, changes: '1.23.0', [key]: '1.29.0' } },
+        version: '1.30.0',
+      }),
+      [`it needs Lumovi 1.23.0, and ${what} came in Lumovi 1.29.0: its needs.lumovi should be 1.29.0 at least`],
+    )
+  }
   // What its pages propose to change, and the lists of Lumovi's they open: its file's.
   for (const [said, key, at] of [
     [{ changes: [{ kind: 'argoproj.io/Application', actions: ['patch'] }] }, 'changes', '1.28.0'],
@@ -464,4 +496,17 @@ test('what a choice of whole objects writes: every path in full, those only some
   // Options that all write the same paths: nothing marked.
   const same = { ...proposed, fields: [{ ...proposed.fields[0], options: proposed.fields[0].options.map((option) => ({ ...option, value: { method: option.label } })) }] }
   assert.deepEqual(writesOf(same), ['spec.method'])
+})
+
+test('what a switch of two values writes: as a choice of two, another field’s place in them a path of its own; a section writes nothing', () => {
+  const proposed = {
+    body: { operation: { sync: { syncStrategy: { field: 'applyOnly' }, syncOptions: { field: 'syncOptions' } } } },
+    fields: [
+      { kind: 'section', label: 'How' },
+      { kind: 'switch', key: 'applyOnly', label: 'Apply only', values: [{ hook: { force: { field: 'force' } } }, { apply: { force: { field: 'force' } } }] },
+      { kind: 'switch', key: 'force', label: 'Force' },
+      { kind: 'picks', key: 'syncOptions', label: 'Options', options: [{ label: 'Prune last', value: 'PruneLast=true' }] },
+    ],
+  }
+  assert.deepEqual(writesOf(proposed), ['operation.sync.syncOptions', 'operation.sync.syncStrategy (apply.force or hook.force)'])
 })

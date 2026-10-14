@@ -195,12 +195,22 @@ test('the overview: four tiles, what needs a look worst first, what runs now, an
   const drawn = overview(read, () => {}, NOW)
   const tiles = find(drawn, 'tiles')!.props.tiles as { key: string; value?: { text: string }; detail?: string; opens?: unknown }[]
   assert.deepEqual(
-    tiles.map(({ key, value, detail: said, opens }) => [key, value?.text, said, opens !== undefined]),
+    tiles.map(({ key, value, detail: said }) => [key, value?.text, said]),
     [
-      ['healthy', '5/7', '1 degraded · 1 progressing', true],
-      ['synced', '5/7', '2 out of sync', false],
-      ['syncing', '1', 'the longest for 1m 05s', false],
-      ['failed', '1', 'legacy-batch', false],
+      ['healthy', '5/7', '1 degraded · 1 progressing'],
+      ['synced', '5/7', '2 out of sync'],
+      ['syncing', '1', 'the longest for 1m 05s'],
+      ['failed', '1', 'legacy-batch'],
+    ],
+  )
+  // Each opens the Applications page, filtered to those it counts apart.
+  assert.deepEqual(
+    tiles.map(({ opens }) => opens),
+    [
+      { page: 'applications', filters: { health: ['Progressing', 'Degraded'] } },
+      { page: 'applications', filters: { sync: ['Out of sync'] } },
+      { page: 'applications', filters: { operation: ['Syncing'] } },
+      { page: 'applications', filters: { operation: ['Failed'] } },
     ],
   )
   // What needs a look: each once, under the first reason that holds, worst first, with Argo CD's line.
@@ -215,8 +225,14 @@ test('the overview: four tiles, what needs a look worst first, what runs now, an
   )
   // Running now: its operation, how long, and what it waits on, as Argo CD says it.
   assert.deepEqual(
-    rows('running').map(({ lead, cells }) => [lead.name, cells[0]!.word, cells[1], cells[3]]),
-    [['payments', 'Syncing', { kind: 'age', time: '2026-10-13T11:58:55Z' }, { kind: 'text', text: 'Deployment/payments', mono: true }]],
+    rows('running').map(({ lead, cells }) => [lead.name, cells[0], cells[2]]),
+    [
+      [
+        'payments',
+        { kind: 'status', level: 'progressing', word: 'Syncing', since: '2026-10-13T11:58:55Z' },
+        { kind: 'text', text: 'Deployment/payments', mono: true },
+      ],
+    ],
   )
   // The syncs that ended last, newest first: those deployed, and a last one that failed.
   assert.deepEqual(
@@ -241,8 +257,19 @@ test('the overview: four tiles, what needs a look worst first, what runs now, an
   )
   // Health and sync, and where they run, as counts.
   const groups = (key: string) => (find(drawn, key)!.children![0] as Drawn).props.groups as { title: string; rows: { value: string; count: number }[] }[]
-  assert.deepEqual(groups('by-state')[1], { title: 'Sync', rows: [{ value: 'Synced', count: 5 }, { value: 'Out of sync', count: 2 }] })
-  assert.deepEqual(groups('where')[1]!.rows[0], { value: 'shop', count: 3 })
+  // Each count opens the Applications page, filtered to it.
+  assert.deepEqual(groups('by-state')[1], {
+    title: 'Sync',
+    rows: [
+      { value: 'Synced', count: 5, opens: { page: 'applications', filters: { sync: ['Synced'] } } },
+      { value: 'Out of sync', count: 2, opens: { page: 'applications', filters: { sync: ['Out of sync'] } } },
+    ],
+  })
+  assert.deepEqual(groups('where')[1]!.rows[0], {
+    value: 'shop',
+    count: 3,
+    opens: { page: 'applications', filters: { namespace: ['shop'] } },
+  })
   // Before its reads answer, busy; where one ended, failed with Try again; with none at all, one line.
   const busy = overview({ applications: undefined, projects: undefined, appSets: undefined }, () => {}, NOW)
   assert.deepEqual((find(busy, 'attention')!.children![0] as Drawn).props.state, { is: 'busy' })
@@ -254,6 +281,15 @@ test('the overview: four tiles, what needs a look worst first, what runs now, an
     title: 'No applications in this cluster',
     line: 'Argo CD is installed; its applications show here once there are any.',
   })
+  // A value longer than a link or a table's text takes (a private endpoint's address, say) is
+  // counted, and opens nothing; it's no filter's value either.
+  const far = { metadata: { name: 'far' }, spec: { destination: { server: `https://${'a'.repeat(300)}.example.com`, namespace: 'x' } } }
+  const withFar = overview({ ...read, applications: { objects: [{ token: 'far', object: far }] } }, () => {}, NOW)
+  const clusters = ((find(withFar, 'where')!.children![0] as Drawn).props.groups as { rows: { value: string; opens?: unknown }[] }[])[0]!
+  assert.equal(clusters.rows[0]!.value.length > 253, true)
+  assert.equal(clusters.rows[0]!.opens, undefined)
+  const farRows = find(applications({ objects: [{ token: 'far', object: far }] }, () => {}), 'table')!.props.rows as { facets: { filter: string }[] }[]
+  assert.equal(farRows[0]!.facets.some(({ filter }) => filter === 'cluster'), false)
   // Nothing needs a look: one calm line.
   const well = overview({ ...read, applications: { objects: [read.applications.objects[0]!] } }, () => {}, NOW)
   assert.deepEqual((find(well, 'attention')!.children![0] as Drawn).props.state, {
@@ -279,6 +315,26 @@ test('its Applications page lists every one, worst first, with its operation, re
       ['Syncing', 'v2.4.1 · 4f1c9aa', 'https://kubernetes.default.svc · payments', 'Off'],
     ],
   )
+  // Its filter bar: health, sync, operation and project, and more; each row's values for them.
+  assert.deepEqual(
+    (table.props.filters as { key: string; more?: boolean }[]).map(({ key, more }) => (more ? `${key}…` : key)),
+    ['health', 'sync', 'operation', 'project', 'cluster…', 'namespace…', 'auto-sync…'],
+  )
+  assert.equal(table.props.search, true)
+  const payments = (table.props.rows as { lead: { name: string }; facets: { filter: string; value: string }[]; cells: object[] }[]).find(
+    ({ lead }) => lead.name === 'payments',
+  )!
+  assert.deepEqual(payments.facets, [
+    { filter: 'health', value: 'Progressing' },
+    { filter: 'sync', value: 'Out of sync' },
+    { filter: 'operation', value: 'Syncing' },
+    { filter: 'project', value: 'shop' },
+    { filter: 'cluster', value: 'https://kubernetes.default.svc' },
+    { filter: 'namespace', value: 'payments' },
+    { filter: 'auto-sync', value: 'Off' },
+  ])
+  // A sync running: how long, counted by Lumovi.
+  assert.deepEqual(payments.cells[2], { kind: 'status', level: 'progressing', word: 'Syncing', since: '2026-10-13T11:58:55Z' })
   assert.deepEqual((find(applications(undefined, () => {}), 'table')!.props.state as { is: string }).is, 'busy')
 })
 
@@ -348,7 +404,8 @@ test('Sync isn’t proposed while one runs; auto-sync is turned off, or on with 
   propose(page as never, 'sync', 't-payments', named('payments'))
   assert.equal(proposed.length, 0)
   propose(page as never, 'sync', 't-monitoring', named('monitoring'))
-  assert.deepEqual(Object.keys((proposed[0]!.change.patch as { operation: { sync: object } }).operation.sync), ['prune', 'syncStrategy'])
+  // (Several sources: each synced to what it tracks, so no revision; no resources it reports, none to choose.)
+  assert.deepEqual(Object.keys((proposed[0]!.change.patch as { operation: { sync: object } }).operation.sync), ['prune', 'dryRun', 'syncStrategy', 'syncOptions'])
   propose(page as never, 'auto-sync', 't-storefront', named('storefront'))
   assert.deepEqual(proposed[1], { change: { action: 'patch', target: 't-storefront', patch: { spec: { syncPolicy: { automated: null } } } }, said: { verb: 'Turn off' } })
   propose(page as never, 'auto-sync', 't-payments', named('payments'))
@@ -358,6 +415,114 @@ test('Sync isn’t proposed while one runs; auto-sync is turned off, or on with 
   propose(page as never, 'auto-sync', 't-x', { spec: { syncPolicy: { automated: { enabled: false, prune: true } } } })
   assert.deepEqual(proposed[3]!.change.patch, { spec: { syncPolicy: { automated: { enabled: true, prune: { field: 'prune' }, selfHeal: { field: 'selfHeal' } } } } })
   assert.deepEqual(proposed[3]!.said!.fields!.map(({ value }) => value), [true, false])
+})
+
+type Said = {
+  verb?: string
+  fields: { kind: string; key?: string; label: string; hint?: string; value?: unknown; values?: unknown[]; shows?: string[]; verb?: string; options?: { label: string; value: unknown }[] }[]
+  harm?: { path?: string; detail?: string }[]
+}
+
+/** What Sync… proposes for `object`: the change, and what it says. */
+function syncOf(object: Object_): { change: { patch: { operation: { sync: Record<string, unknown>; retry: unknown } } }; said: Said } {
+  const proposed: { change: never; said: Said }[] = []
+  propose({ propose: (change: never, said: Said) => (proposed.push({ change, said }), Promise.resolve('applied')) } as never, 'sync', 't', object)
+  return proposed[0]!
+}
+
+test('Sync… has every option Argo CD’s own sync has, in its order, starting from the Application', () => {
+  const { change, said } = syncOf(named('storefront'))
+  assert.equal(said.verb, 'Sync')
+  assert.deepEqual(
+    said.fields.map(({ kind, key, label }) => key ?? `${label} (${kind})`),
+    [
+      ...['revision', 'How (section)', 'prune', 'dryRun', 'applyOnly', 'force', 'Sync options (section)', 'syncOptions'],
+      ...['If it fails (section)', 'retry', 'retryLimit', 'retryDuration', 'retryFactor', 'retryMaxDuration', 'Resources (section)', 'some', 'resources'],
+    ],
+  )
+  const fieldOf = (key: string) => said.fields.find((each) => each.key === key)!
+  // Nothing that does harm is on to start; a dry run says so on the button.
+  assert.deepEqual(['prune', 'dryRun', 'applyOnly', 'force'].map((key) => fieldOf(key).value), [false, false, false, false])
+  assert.equal(fieldOf('dryRun').verb, 'Dry run')
+  // Apply only picks the strategy, and Force is filled in inside it, whichever it is.
+  assert.deepEqual(change.patch.operation.sync.syncStrategy, { field: 'applyOnly' })
+  assert.deepEqual(fieldOf('applyOnly').values, [{ hook: { force: { field: 'force' } } }, { apply: { force: { field: 'force' } } }])
+  assert.equal(fieldOf('applyOnly').hint, 'Skip hooks: PreSync db-migrate doesn’t run.')
+  // Retry shows its limit and backoff only while it's on: off, none of it is sent.
+  assert.deepEqual(fieldOf('retry').shows, ['retryLimit', 'retryDuration', 'retryFactor', 'retryMaxDuration'])
+  assert.deepEqual(change.patch.operation.retry, {
+    limit: { field: 'retryLimit' },
+    backoff: { duration: { field: 'retryDuration' }, factor: { field: 'retryFactor' }, maxDuration: { field: 'retryMaxDuration' } },
+  })
+  assert.deepEqual(['retry', 'retryLimit', 'retryDuration', 'retryFactor', 'retryMaxDuration'].map((key) => fieldOf(key).value), [false, 2, '5s', 2, '3m'])
+  // Only some resources shows the list, those out of sync chosen to start (none here), each as Argo CD names it.
+  assert.deepEqual(fieldOf('some').shows, ['resources'])
+  const resources = fieldOf('resources')
+  assert.deepEqual(resources.value, [])
+  assert.equal(resources.hint, 'None is out of sync.')
+  for (const { value } of resources.options!) assert.deepEqual(Object.keys(value as object).filter((key) => !['group', 'kind', 'namespace', 'name'].includes(key)), [])
+  // Every label and hint is within the dialog's words.
+  for (const each of said.fields) {
+    assert.ok([...each.label].length <= 40, each.label)
+    assert.ok(each.hint === undefined || [...each.hint].length <= 160, each.hint ?? '')
+    for (const option of each.options ?? []) assert.ok([...option.label].length <= 40, option.label)
+  }
+})
+
+test('Sync… starts from the Application’s own sync options and retry, and says what a prune would delete', () => {
+  const resource = (name: string, status: string, more: object = {}) => ({ group: 'apps', kind: 'Deployment', namespace: 'shop', name, status, ...more })
+  const { change, said } = syncOf({
+    metadata: { name: 'shop', namespace: 'argocd' },
+    spec: {
+      source: { repoURL: 'https://example.com/shop.git', targetRevision: 'release-2' },
+      destination: { namespace: 'shop' },
+      syncPolicy: { syncOptions: ['CreateNamespace=true', 'Validate=false'], retry: { limit: 5, backoff: { duration: '10s', factor: 3, maxDuration: '5m' } } },
+    },
+    status: {
+      resources: [
+        resource('web', 'Synced'),
+        resource('api', 'OutOfSync'),
+        { group: '', kind: 'ConfigMap', namespace: 'shop', name: 'old-config', status: 'OutOfSync', requiresPruning: true },
+        { group: 'networking.k8s.io', kind: 'Ingress', namespace: 'other', name: 'a'.repeat(60), status: 'Synced' },
+      ],
+    },
+  })
+  const fieldOf = (key: string) => said.fields.find((each) => each.key === key)!
+  assert.equal(fieldOf('revision').value, 'release-2')
+  assert.equal(fieldOf('revision').hint, 'A branch, a tag or a commit. Empty syncs to what it tracks: release-2.')
+  // Its own options on, the ones Lumovi doesn't name offered as written, after the others.
+  const options = fieldOf('syncOptions')
+  assert.deepEqual(options.options!.map(({ value }) => value), ['ServerSideApply=true', 'PruneLast=true', 'ApplyOutOfSyncOnly=true', 'CreateNamespace=true', 'Validate=false'])
+  assert.deepEqual(options.value, [3, 4])
+  assert.deepEqual(change.patch.operation.sync.syncOptions, { field: 'syncOptions' })
+  // Its own retry: on, as it says it.
+  assert.deepEqual(['retry', 'retryLimit', 'retryDuration', 'retryFactor', 'retryMaxDuration'].map((key) => fieldOf(key).value), [true, 5, '10s', 3, '5m'])
+  // Out of sync to start; one in another namespace says it; a long name is cut to the dialog's words.
+  const resources = fieldOf('resources')
+  assert.deepEqual(resources.value, [1, 2])
+  assert.deepEqual(resources.options!.map(({ label }) => label), ['Deployment web', 'Deployment api', 'ConfigMap old-config', `Ingress other/${'a'.repeat(25)}…`])
+  assert.deepEqual(resources.options![2]!.value, { group: '', kind: 'ConfigMap', namespace: 'shop', name: 'old-config' })
+  assert.equal(resources.hint, '2 of 4 out of sync, chosen to start.')
+  // What a prune would delete, under the file's words for it.
+  assert.deepEqual(said.harm, [{ path: 'operation.sync.prune', detail: 'This one: ConfigMap shop/old-config.' }])
+  // Nothing to prune: nothing added.
+  assert.equal(syncOf(named('storefront')).said.harm, undefined)
+})
+
+test('Sync… offers 200 resources at most, those out of sync first, and names as many to prune as fit', () => {
+  const many = Array.from({ length: 250 }, (_, i) => ({
+    ...{ group: '', kind: 'ConfigMap', namespace: 'shop', name: `config-${i}` },
+    ...{ status: i % 50 === 49 ? 'OutOfSync' : 'Synced', ...(i < 30 ? { requiresPruning: true } : {}) },
+  }))
+  const { said } = syncOf({ spec: { destination: { namespace: 'shop' } }, status: { resources: many } })
+  const resources = said.fields.find((each) => each.key === 'resources')!
+  assert.equal(resources.options!.length, 200)
+  assert.deepEqual(resources.options!.slice(0, 5).map(({ label }) => label), ['ConfigMap config-49', 'ConfigMap config-99', 'ConfigMap config-149', 'ConfigMap config-199', 'ConfigMap config-249'])
+  assert.deepEqual(resources.value, [0, 1, 2, 3, 4])
+  assert.equal(resources.hint, '5 of 250 out of sync, chosen to start. The first 200, out of sync first.')
+  const detail = said.harm![0]!.detail!
+  assert.ok([...detail].length <= 160, detail)
+  assert.match(detail, /^These 30: ConfigMap shop\/config-0, .* and \d+ more\.$/)
 })
 
 test('its resources are a graph: what it manages, its hooks, and here its ReplicaSets and Pods, which open', () => {

@@ -202,6 +202,27 @@ test('the Lumovi a plugin needs carries all it uses of the door: what its file s
       [`it needs Lumovi 1.23.0, and its file’s ${key} came in Lumovi ${at}: its needs.lumovi should be ${at} at least`],
     )
   }
+  // What a view's action says that came later: busy, and its dialog's own question and button.
+  for (const key of ['busy', 'same', 'confirmTitle', 'confirmButton']) {
+    assert.deepEqual(
+      needsProblems({
+        plugin: { ...plugin, views: [{ actions: [{ name: 'Sync', [key]: key === 'busy' || key === 'same' ? [] : 'x' }] }], needs: { lumovi: '1.23.0' } },
+        used: { read: [], parts: [], kinds: [] },
+        since: { ...since, action: { busy: '1.29.0', same: '1.29.0', confirmTitle: '1.29.0', confirmButton: '1.29.0' } },
+        version: '1.30.0',
+      }),
+      [`it needs Lumovi 1.23.0, and an action’s ${key} came in Lumovi 1.29.0: its needs.lumovi should be 1.29.0 at least`],
+    )
+  }
+  assert.deepEqual(
+    needsProblems({
+      plugin,
+      used: { read: [], parts: [], kinds: [] },
+      since: { ...since, action: { busy: 'next', retries: 'next' } },
+      version: '1.30.0',
+    }),
+    ['the pinned Lumovi’s PLUGIN_SINCE has action key retries, which this check doesn’t read: teach needsProblems in scripts/samples.mjs'],
+  )
   // What a part took only later, said in its page's description.
   assert.deepEqual(needs('1.25.0', { props: ['Tiles.tiles[].value.kind=time'] }), [
     'it needs Lumovi 1.25.0, and a page’s Tiles.tiles[].value.kind=time came in Lumovi 1.26.0: its needs.lumovi should be 1.26.0 at least',

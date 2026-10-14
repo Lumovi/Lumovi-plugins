@@ -3,7 +3,7 @@
  * draws, and what its tab proposes, are in pages.ts.
  */
 import { plugin, type Page } from '../runtime/index.ts'
-import { nameOf, namespaceOf } from './application.ts'
+import { at, nameOf, namespaceOf, operation } from './application.ts'
 import { APPLICATIONS, overview, propose, tab, tabEnded, type Got } from './pages.ts'
 
 plugin((page: Page) => {
@@ -40,7 +40,19 @@ plugin((page: Page) => {
   }
   // A tab on one Application: drawn from what it was opened on, then from its own read as it changes.
   let { token, object } = opened.object
-  const draw = () => page.draw(tab(object, (pressed) => propose(page, pressed, token, object)))
+  // When the operation it holds that hasn't started was first seen: a minute on, it may be stuck.
+  let waiting: { operation: string; since: number } | undefined
+  const firstSeen = () => {
+    if (operation(object)?.phase !== 'waiting') {
+      waiting = undefined
+      return undefined
+    }
+    const asked = JSON.stringify(at(object, 'operation'))
+    if (waiting?.operation !== asked) waiting = { operation: asked, since: Date.now() }
+    return waiting.since
+  }
+  const draw = () =>
+    page.draw(tab(object, (pressed) => propose(page, pressed, token, object), Date.now(), firstSeen()))
   draw()
   page
     .object(APPLICATIONS, namespaceOf(object), nameOf(object))

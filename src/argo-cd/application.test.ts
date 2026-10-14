@@ -8,13 +8,16 @@ import { test } from 'node:test'
 import type { Part } from '../runtime/index.ts'
 import {
   autoSync,
+  cluster,
   deletesWhatItDeployed,
   detail,
   failed,
   health,
   lastSync,
+  operation,
   restByHealth,
   running,
+  secondStatus,
   severalSources,
   shortRevision,
   source,
@@ -50,26 +53,107 @@ test('an Application’s health, sync and operation are read as Argo CD says the
   assert.deepEqual(health(named('legacy-batch')), { level: 'critical', word: 'Degraded' })
   assert.deepEqual(health({}), { level: 'neutral', word: 'Unknown' })
   assert.equal(sync(named('payments')).word, 'Out of sync')
-  assert.equal(sync({}).word, 'Unknown')
-  assert.deepEqual(running(named('payments')), { message: 'waiting for healthy state of apps/Deployment/payments' })
-  assert.equal(running(named('storefront')), undefined)
+  // (Unknown is neither in sync nor out of it: it's counted with neither.)
+  assert.deepEqual(sync({}), { level: 'neutral', word: 'Unknown', synced: false, outOfSync: false })
+  assert.deepEqual(operation(named('payments')), {
+    phase: 'running',
+    message: 'waiting for healthy state of apps/Deployment/payments',
+  })
+  assert.equal(running(named('payments')), true)
+  assert.equal(running(named('storefront')), false)
+  // Asked for, not started: `.operation`, and the state a finished one left.
+  assert.deepEqual(operation({ operation: { sync: {} }, status: { operationState: { phase: 'Succeeded' } } }), {
+    phase: 'waiting',
+  })
   assert.equal(failed(named('legacy-batch')), 'one or more objects failed to apply')
 })
 
-test('the header’s detail is the running operation’s message, then the failed one’s, then the first condition’s', () => {
-  assert.equal(detail(named('payments')), 'Sync running: waiting for healthy state of apps/Deployment/payments')
-  assert.equal(detail(named('legacy-batch')), 'one or more objects failed to apply')
-  const conditionOnly = { status: { conditions: [{ type: 'ComparisonError', message: 'no repo' }] } }
-  assert.equal(detail(conditionOnly), 'no repo')
-  assert.equal(detail(named('storefront')), undefined)
+test('the header’s second status says the operation, how the last one ended, or its sync, in Lumovi’s words', () => {
+  const now = Date.parse('2026-10-14T12:00:00Z')
+  const ago = (minutes: number) => new Date(now - minutes * 60_000).toISOString()
+  const op = (phase: string, more: object = {}) => ({ operation: { sync: {} }, status: { operationState: { phase, ...more } } })
+  // Running, with its time: past ten minutes amber, and its line says it may be stuck, and since when.
+  assert.deepEqual(secondStatus(op('Running', { startedAt: ago(1), message: 'waiting for healthy state' }), now), {
+    level: 'progressing',
+    word: 'Syncing',
+    since: ago(1),
+    detail: 'Sync running: waiting for healthy state',
+  })
+  assert.deepEqual(secondStatus(op('Running', { startedAt: ago(14.5), message: 'waiting for healthy state' }), now), {
+    level: 'warning',
+    word: 'Syncing',
+    since: ago(14.5),
+    detail: 'May be stuck after 14 minutes: waiting for healthy state',
+  })
+  assert.deepEqual(secondStatus(op('Terminating', { startedAt: ago(2), message: 'operation is terminating' }), now), {
+    level: 'progressing',
+    word: 'Terminating',
+    since: ago(2),
+    detail: 'Sync terminating: operation is terminating',
+  })
+  // Asked for and not started: no time; a minute after it was first seen, amber, and why.
+  const asked = op('Succeeded', { finishedAt: ago(60) })
+  assert.deepEqual(secondStatus(asked, now, now - 30_000), {
+    level: 'progressing',
+    word: 'Syncing',
+    detail: 'Waiting for Argo CD to start the sync.',
+  })
+  assert.deepEqual(secondStatus(asked, now, now - 61_000), {
+    level: 'warning',
+    word: 'Syncing',
+    detail: 'Not started: Argo CD hasn’t picked up the sync for over a minute. Its application controller may not be running.',
+  })
+  // How the last one ended: failed and an error in red; terminated in grey; each with Argo CD's message.
+  assert.deepEqual(secondStatus(named('legacy-batch'), now), {
+    level: 'critical',
+    word: 'Sync failed',
+    detail: 'one or more objects failed to apply',
+  })
+  const last = (phase: string, message: string) => ({ status: { operationState: { phase, message } } })
+  assert.deepEqual(secondStatus(last('Error', 'Operation termination had errors'), now), {
+    level: 'critical',
+    word: 'Sync error',
+    detail: 'Operation termination had errors',
+  })
+  assert.deepEqual(secondStatus(last('Failed', 'Operation terminated'), now), {
+    level: 'neutral',
+    word: 'Sync terminated',
+    detail: 'Operation terminated',
+  })
+  // Else its sync, with no line: the header's own line is its first condition's.
+  assert.deepEqual(secondStatus(named('storefront'), now), { level: 'healthy', word: 'Synced' })
+  assert.deepEqual(secondStatus({}, now), { level: 'neutral', word: 'Unknown' })
+  assert.equal(detail(named('legacy-batch')), 'Failed to load target state: kustomize build jobs/legacy-batch failed')
+  assert.equal(detail(named('payments')), undefined)
 })
 
 test('a last sync says how it went and who started it; auto-sync says prune and self-heal', () => {
   assert.deepEqual(lastSync(named('storefront')), { time: '2026-10-13T11:57:00Z', how: 'Succeeded, by auto-sync' })
   assert.deepEqual(lastSync(named('legacy-batch')), { time: '2026-10-13T10:00:00Z', how: 'Failed, by admin' })
   assert.equal(lastSync(named('payments')), undefined)
+  // While one runs, its state has no end yet: the last deployed, from its history, newest first.
+  const runningAgain = {
+    operation: { sync: {} },
+    status: {
+      operationState: { phase: 'Running', startedAt: '2026-10-14T11:59:00Z' },
+      history: [
+        { id: 1, deployedAt: '2026-10-12T10:00:00Z' },
+        { id: 2, deployedAt: '2026-10-13T10:00:00Z' },
+      ],
+    },
+  }
+  assert.deepEqual(lastSync(runningAgain), { time: '2026-10-13T10:00:00Z', how: 'Succeeded' })
   assert.deepEqual(autoSync(named('storefront')), { on: true, detail: 'Prune off · self-heal on' })
   assert.deepEqual(autoSync(named('payments')), { on: false, detail: 'Syncs when asked' })
+  // Argo CD 3 keeps its settings, turned off, with `enabled: false`.
+  assert.deepEqual(autoSync({ spec: { syncPolicy: { automated: { enabled: false, prune: true } } } }), {
+    on: false,
+    detail: 'Syncs when asked',
+  })
+  assert.equal(autoSync({ spec: { syncPolicy: { automated: { enabled: true } } } }).on, true)
+  // Its cluster: by name where it's given one, else its server.
+  assert.equal(cluster(named('storefront')), 'https://kubernetes.default.svc')
+  assert.equal(cluster({ spec: { destination: { name: 'prod-eu', namespace: 'shop' } } }), 'prod-eu')
 })
 
 test('what deleting it deletes, a revision shortened, and where it’s from', () => {
@@ -100,6 +184,19 @@ test('the overview counts the healthy, the out of sync and the failed, and lists
       ['failed', '1', 'legacy-batch'],
     ],
   )
+  // Only Healthy opens a list: Lumovi's can't be narrowed to the out of sync or the failed, and a
+  // tile that says how many doesn't open all of them.
+  assert.deepEqual(
+    (tiles as { key: string; opens?: unknown }[]).map(({ key, opens }) => [key, opens !== undefined]),
+    [['healthy', true], ['out-of-sync', false], ['failed', false]],
+  )
+  // Unknown is never counted as out of sync.
+  const unknown = { metadata: { name: 'fresh' }, status: { sync: { status: 'Unknown' } } }
+  const counted = find(overview({ objects: [{ token: 'u', object: unknown }] }, () => {}), 'tiles')!.props.tiles as {
+    key: string
+    value?: { text: string }
+  }[]
+  assert.equal(counted.find(({ key }) => key === 'out-of-sync')!.value!.text, '0')
   const table = find(drawn, 'applications')!.children![0] as Drawn
   const rows = table.props.rows as { group: string; lead: { name: string } }[]
   // The default project, with a degraded application, before shop; within shop, the worst first.
@@ -133,7 +230,17 @@ test('the tab’s header has its three buttons, its health and its reason; a pre
   const pressed: string[] = []
   const drawn = tab(named('legacy-batch'), (button) => pressed.push(button))
   const header = find(drawn, 'header')!
-  assert.deepEqual(header.props.status, { level: 'critical', word: 'Degraded', detail: 'one or more objects failed to apply' })
+  assert.deepEqual(header.props.status, {
+    level: 'critical',
+    word: 'Degraded',
+    detail: 'Failed to load target state: kustomize build jobs/legacy-batch failed',
+  })
+  // Beside health, how its last sync ended: its line stands in for health's under the header.
+  assert.deepEqual(header.props.secondStatus, {
+    level: 'critical',
+    word: 'Sync failed',
+    detail: 'one or more objects failed to apply',
+  })
   assert.deepEqual(
     (header.props.buttons as { key: string }[]).map(({ key }) => key),
     ['delete', 'refresh', 'sync'],
@@ -157,15 +264,20 @@ test('the tab’s header has its three buttons, its health and its reason; a pre
   assert.deepEqual([none[2]!.value, none[2]!.detail], [{ kind: 'words', text: 'Never' }, undefined])
 })
 
-test('Sync is off and not proposed while a sync runs; with several sources it sets no revision', () => {
-  const buttons = (name: string) =>
-    (find(tab(named(name), () => {}), 'header')!.props.buttons as { key: string; off?: string; note?: string }[]).map(
-      ({ key, off, note }) => [key, off ?? note ?? ''],
+test('Sync is busy, alone, and not proposed while a sync runs; with several sources it sets no revision', () => {
+  const buttons = (object: Object_) =>
+    (find(tab(object, () => {}), 'header')!.props.buttons as { key: string; busy?: { word: string; since?: string }; note?: string }[]).map(
+      ({ key, busy, note }) => [key, busy ? `busy: ${busy.word}${busy.since ? ' since' : ''}` : (note ?? '')],
     )
-  // Delete says what else it deletes where Argo CD's finalizer would; Sync is off while one runs.
+  // Delete says what else it deletes where Argo CD's finalizer would; while an operation's on it,
+  // Sync is busy where it was, and alone (its time is the second status's).
   const finalizer = 'Deleting it also deletes what it deployed (it has Argo CD’s resources finalizer).'
-  assert.deepEqual(buttons('payments'), [['delete', ''], ['refresh', ''], ['sync', 'A sync is running.']])
-  assert.deepEqual(buttons('storefront'), [['delete', finalizer], ['refresh', ''], ['sync', '']])
+  assert.deepEqual(buttons(named('payments')), [['sync', 'busy: Syncing']])
+  assert.deepEqual(buttons({ operation: { sync: {} }, status: { operationState: { phase: 'Terminating' } } }), [
+    ['sync', 'busy: Terminating'],
+  ])
+  assert.deepEqual(buttons({ operation: { sync: {} } }), [['sync', 'busy: Syncing']])
+  assert.deepEqual(buttons(named('storefront')), [['delete', finalizer], ['refresh', ''], ['sync', '']])
   const proposed: { change: unknown; said: unknown }[] = []
   const page = { propose: (change: unknown, said: unknown) => (proposed.push({ change, said }), Promise.resolve('applied')) }
   propose(page as never, 'sync', 't-payments', named('payments'))

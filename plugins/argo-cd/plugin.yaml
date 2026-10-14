@@ -4,7 +4,7 @@ kind: Plugin
 metadata:
   name: argo-cd
 spec:
-  version: 1.2.1
+  version: 1.3.0
   needs:
     lumovi: 1.22.0
   groups:
@@ -17,7 +17,7 @@ spec:
     - { group: argoproj.io, kind: AppProject }
   # Its overview and a tab on an Application (src/argo-cd), drawn from its own kinds alone; and,
   # from the tab, Sync, Refresh and Delete, each confirmed by the person in Lumovi's own dialog.
-  # (Beside the view's own Sync and Refresh, below, which stay wherever the tab doesn't run.)
+  # (Lumovi's own bar, above every tab, has the view's Sync, Terminate sync and Refresh, below.)
   pages:
     - { id: overview, title: Overview }
   tabs:
@@ -52,7 +52,7 @@ spec:
         - { name: Sync, path: .status.sync.status }
         - { name: Repository, path: .spec.source.repoURL }
         - { name: Path, path: .spec.source.path }
-        - { name: Destination, path: .spec.destination.namespace }
+        - { name: Namespace, path: .spec.destination.namespace }
       status:
         - when: { path: .status.health.status, equals: Healthy }
           health: healthy
@@ -81,28 +81,69 @@ spec:
         - { name: Path, path: .spec.source.path }
         - { name: Target revision, path: .spec.source.targetRevision, default: HEAD }
         - { name: Synced revision, path: .status.sync.revision }
-        - { name: Destination, path: .spec.destination.server }
-        - { name: Auto-sync, path: .spec.syncPolicy.automated, type: boolean, default: 'No' }
+        # (Its cluster by name, or by its server: an Application gives one or the other.)
+        - { name: Namespace, path: .spec.destination.namespace }
+        - { name: Cluster, path: .spec.destination.name }
+        - { name: Cluster server, path: .spec.destination.server }
         - { name: Last synced, path: .status.operationState.finishedAt, type: date }
         - { name: Last checked, path: .status.reconciledAt, type: date }
       links:
-        - name: Destination
+        - name: Namespace
           kind: Namespace
           objectName: '{{ .spec.destination.namespace }}'
-      # (These run at once, on Lumovi's own list, wherever it is. The tab's Sync… and Refresh…,
-      # which ask first, run only where a plugin's pages do.)
+      # In Lumovi's own bar and a row's menu, wherever it is: Sync and Terminate sync ask first, and
+      # Refresh runs at once. (The tab's Sync… also lets the person pick a revision, prune and the
+      # strategy.)
       actions:
         - name: Sync
-          runs: at-once
           icon: refresh-cw
           primary: true
-          # Argo CD starts an operation it finds on the application; none may be running already.
+          # Argo CD starts an operation it finds on the application; none may be on it already.
           when: { path: .operation, exists: false }
+          # While one is: busy where it was, with how long once Argo CD has started it.
+          busy:
+            - when: { path: .status.operationState.phase, equals: Terminating }
+              word: Terminating
+              since: .status.operationState.startedAt
+            - when: { path: .status.operationState.phase, equals: Running }
+              word: Syncing
+              since: .status.operationState.startedAt
+            - when: { path: .operation, exists: true }
+              word: Syncing
+          confirm: Argo CD brings {{ .metadata.name }} in line with its source, at the revision it tracks. To pick a revision, prune, or choose a strategy, use Sync… on its Argo CD tab.
           patch:
             operation:
               initiatedBy: { username: lumovi }
               sync: { syncStrategy: { hook: {} } }
           done: Started syncing {{ .metadata.name }}
+        # Terminate sync: Argo CD's own Terminate for a sync that runs (it sets the phase, on the
+        # Application itself: its kind has no status subresource), and, for one asked for that Argo
+        # CD hasn't started, the request taken back. Each sent with the version Lumovi judged it on.
+        - name: Terminate sync
+          icon: square
+          primary: true
+          when: { path: .status.operationState.phase, equals: Running }
+          # The sync it was shown, and no other that started meanwhile.
+          same: [.status.operationState.startedAt]
+          confirm: Argo CD stops this sync where it is. What it has already applied stays applied, and the rest isn’t applied.
+          confirmTitle: Terminate {{ .metadata.name }}’s sync?
+          patch: { status: { operationState: { phase: Terminating } } }
+          done: Terminating {{ .metadata.name }}’s sync
+        - name: Terminate sync
+          icon: square
+          primary: true
+          when:
+            all:
+              - { path: .operation, exists: true }
+              - any:
+                  - { path: .status.operationState, exists: false }
+                  - { path: .status.operationState.phase, in: [Succeeded, Failed, Error] }
+          # The request it was shown, and no other put in its place meanwhile.
+          same: [.operation]
+          confirm: Argo CD hasn’t started this sync yet. Terminating it takes the request back, so it never runs.
+          confirmTitle: Terminate {{ .metadata.name }}’s sync?
+          patch: { operation: null }
+          done: Took back {{ .metadata.name }}’s sync before it started
         - name: Refresh
           runs: at-once
           icon: radar

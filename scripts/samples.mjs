@@ -20,6 +20,10 @@
  * than Lumovi lists at once: a list of it is answered with the sample's objects as its first, and
  * the door's token for how it was cut (`{}` where the cluster doesn't say how many).
  *
+ * `"events": { "/Pod": { "shop/cart-7d9f": [ … ] } }` are the events the cluster keeps of an object,
+ * by its kind as a read names it, then its namespace and name, each as the cluster has it: a read of
+ * them is answered with its warnings, newest first, each as Lumovi hands one.
+ *
  * (A tab: "opens": { "tab": "pool", "object": { "kind": "karpenter.sh/NodePool", "name": "default" } }.)
  *
  * `"now": "2026-10-13T12:00:00Z"` is when it is, for a page that counts from now ("in the last
@@ -276,14 +280,43 @@ async function runSample({ door, changes, plugin, code, sample }) {
   /** What the code listens with. */
   const heard = []
 
+  /**
+   * An object's warning events, as Lumovi hands them: of an object its page holds, of a kind its
+   * file reads the events of, from the sample's `events` (by the kind as a read names it, then
+   * `namespace/name`), newest first, each as Lumovi hands one.
+   */
+  const eventsAnswer = (ask, refused) => {
+    const of = tokens.heldOf(ask.of)
+    if (!of) return refused('not-found')
+    const asked = Object.keys(objects).find((each) => {
+      const { group, kind } = door.kindAsked(each)
+      return lumovisName(door.resolvedAs(group, kind)) === of.kind
+    })
+    const { group, kind } = door.kindAsked(asked ?? '/')
+    if (asked === undefined || !door.granted(grant, door.resolvedAs(group, kind), 'events')) {
+      problems.push(`it asks for the events of a ${of.kind}, which its file doesn’t say it reads`)
+      return refused('not-granted')
+    }
+    const said = sample.events?.[asked]?.[`${of.namespace ?? ''}/${of.name}`] ?? []
+    counted.answered(ask.read)
+    return {
+      read: ask.read,
+      events: said
+        .filter((event) => event?.type === 'Warning')
+        .map((event) => ({ ...event, metadata: { creationTimestamp: event.lastTimestamp } }))
+        .sort((a, b) => Date.parse(b.lastTimestamp) - Date.parse(a.lastTimestamp))
+        .slice(0, door.READ_LIMITS.events)
+        .map((event) => door.handedEvent(event)),
+    }
+  }
+
   /** Lumovi's answer to an ask to read: as its own reads answer, from the sample. */
   const answer = (ask) => {
     const refused = (code) => {
       counted.refused(ask.read)
       return { read: ask.read, ended: code, said: door.READ_REFUSED[code] }
     }
-    // (Events come later, as they do in Lumovi.)
-    if (ask.what === 'events') return refused('not-yet')
+    if (ask.what === 'events') return eventsAnswer(ask, refused)
     if (ask.what === 'server') return serverAnswer(ask)
     const kind = door.resolvedAs(door.kindAsked(ask.kind).group, door.kindAsked(ask.kind).kind)
     const handed = door.granted(grant, kind, 'objects')
@@ -505,7 +538,7 @@ async function runSample({ door, changes, plugin, code, sample }) {
       const read = door.readAsk(ask)
       if ('why' in read) return end(`Lumovi’s door stopped it: ${read.what}`)
       for (const what of ['usage', 'fields', 'labels']) if (read[what] !== undefined) used.read.add(what)
-      if (read.what === 'server' || read.what === 'logs') used.read.add(read.what)
+      if (read.what === 'server' || read.what === 'logs' || read.what === 'events') used.read.add(read.what)
       const count = counted.take(read)
       if (typeof count === 'object') return end(`Lumovi’s door stopped it: ${count.what}`)
       if (count === 'too-soon' || 'refresh' in read) return

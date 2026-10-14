@@ -4,7 +4,7 @@ kind: Plugin
 metadata:
   name: argo-cd
 spec:
-  version: 1.3.0
+  version: 1.4.0
   needs:
     lumovi: 1.22.0
   groups:
@@ -15,13 +15,45 @@ spec:
     - { group: argoproj.io, kind: Application }
     - { group: argoproj.io, kind: ApplicationSet }
     - { group: argoproj.io, kind: AppProject }
-  # Its overview and a tab on an Application (src/argo-cd), drawn from its own kinds alone; and,
-  # from the tab, Sync, Refresh and Delete, each confirmed by the person in Lumovi's own dialog.
-  # (Lumovi's own bar, above every tab, has the view's Sync, Terminate sync and Refresh, below.)
+  # Its Overview, every Application in one table, and a tab on an Application (src/argo-cd), drawn
+  # from its own kinds, and, where an Application deploys to this cluster, from the ReplicaSets and
+  # Pods it manages; and, from the tab, Sync, Refresh, Delete and auto-sync turned on or off, each
+  # confirmed by the person in Lumovi's own dialog. (Lumovi's own bar, above every tab, has the
+  # view's Sync, Terminate sync and Refresh, below.)
   pages:
     - { id: overview, title: Overview }
+    - { id: applications, title: All applications }
   tabs:
     - { id: application, title: Argo CD, kinds: [{ group: argoproj.io, kind: Application }] }
+  # Of Kubernetes' own, ReplicaSets and Pods: who made each and how ready it is, never what they
+  # run; and their warning events. Its code reads them only where an Application deploys to this
+  # cluster, in its namespace, and only the events of those that aren't well; the file lets it
+  # read these fields wherever you can.
+  reads:
+    - group: apps
+      kind: ReplicaSet
+      fields:
+        [
+          metadata.name,
+          metadata.namespace,
+          metadata.ownerReferences,
+          spec.replicas,
+          status.replicas,
+          status.readyReplicas,
+        ]
+      events: true
+    - group: ''
+      kind: Pod
+      fields:
+        [
+          metadata.name,
+          metadata.namespace,
+          metadata.ownerReferences,
+          status.phase,
+          status.containerStatuses.ready,
+          status.containerStatuses.restartCount,
+        ]
+      events: true
   changes:
     - { group: argoproj.io, kind: Application, actions: [patch, delete] }
   # Lumovi's own lists a resource's row on the tab goes to, at that one object: never read, never
@@ -150,4 +182,4 @@ spec:
           patch:
             metadata:
               annotations: { argocd.argoproj.io/refresh: normal }
-          done: Asked Argo CD to compare {{ .metadata.name }} with its repository
+          done: Asked Argo CD to compare {{ .metadata.name }} with its source

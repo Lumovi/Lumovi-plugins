@@ -18,6 +18,15 @@
           "namespace": "argocd",
           "finalizers": [
             "resources-finalizer.argocd.argoproj.io"
+          ],
+          "ownerReferences": [
+            {
+              "apiVersion": "argoproj.io/v1alpha1",
+              "kind": "ApplicationSet",
+              "name": "shop-services",
+              "uid": "shop-services-uid",
+              "controller": true
+            }
           ]
         },
         "spec": {
@@ -53,6 +62,50 @@
               "initiatedBy": {
                 "automated": true
               }
+            },
+            "startedAt": "2026-10-13T11:56:12Z",
+            "syncResult": {
+              "revision": "4f1c9aa2b7e3d5c8f0a1b2c3d4e5f60718293a4b",
+              "resources": [
+                {
+                  "group": "batch",
+                  "kind": "Job",
+                  "namespace": "shop",
+                  "name": "db-migrate",
+                  "status": "Synced",
+                  "message": "job.batch/db-migrate created",
+                  "hookType": "PreSync",
+                  "hookPhase": "Succeeded",
+                  "syncPhase": "PreSync"
+                },
+                {
+                  "group": "",
+                  "kind": "ConfigMap",
+                  "namespace": "shop",
+                  "name": "storefront-config",
+                  "status": "Synced",
+                  "message": "configmap/storefront-config unchanged",
+                  "syncPhase": "Sync"
+                },
+                {
+                  "group": "",
+                  "kind": "Service",
+                  "namespace": "shop",
+                  "name": "storefront",
+                  "status": "Synced",
+                  "message": "service/storefront unchanged",
+                  "syncPhase": "Sync"
+                },
+                {
+                  "group": "apps",
+                  "kind": "Deployment",
+                  "namespace": "shop",
+                  "name": "storefront",
+                  "status": "Synced",
+                  "message": "deployment.apps/storefront configured",
+                  "syncPhase": "Sync"
+                }
+              ]
             }
           },
           "resources": [
@@ -63,8 +116,10 @@
               "name": "storefront",
               "status": "Synced",
               "health": {
-                "status": "Healthy"
-              }
+                "status": "Healthy",
+                "message": "Deployment \"storefront\" successfully rolled out."
+              },
+              "syncWave": 1
             },
             {
               "kind": "Service",
@@ -88,7 +143,12 @@
               "revision": "4f1c9aa2b7e3d5c8f0a1b2c3d4e5f60718293a4b",
               "deployedAt": "2026-10-13T11:57:00Z",
               "source": {
-                "path": "apps/storefront"
+                "path": "apps/storefront",
+                "targetRevision": "main"
+              },
+              "deployStartedAt": "2026-10-13T11:56:12Z",
+              "initiatedBy": {
+                "automated": true
               }
             },
             {
@@ -96,7 +156,12 @@
               "revision": "9b2e771c0d4e5f60718293a4b4f1c9aa2b7e3d5c",
               "deployedAt": "2026-10-11T12:00:00Z",
               "source": {
-                "path": "apps/storefront"
+                "path": "apps/storefront",
+                "targetRevision": "main"
+              },
+              "deployStartedAt": "2026-10-11T11:58:48Z",
+              "initiatedBy": {
+                "username": "peter"
               }
             }
           ]
@@ -136,7 +201,8 @@
               "initiatedBy": {
                 "username": "admin"
               }
-            }
+            },
+            "startedAt": "2026-10-13T11:58:55Z"
           }
         },
         "operation": {
@@ -230,7 +296,16 @@
         "kind": "Application",
         "metadata": {
           "name": "checkout",
-          "namespace": "argocd"
+          "namespace": "argocd",
+          "ownerReferences": [
+            {
+              "apiVersion": "argoproj.io/v1alpha1",
+              "kind": "ApplicationSet",
+              "name": "shop-services",
+              "uid": "shop-services-uid",
+              "controller": true
+            }
+          ]
         },
         "spec": {
           "project": "shop",
@@ -274,7 +349,16 @@
         "kind": "Application",
         "metadata": {
           "name": "cart",
-          "namespace": "argocd"
+          "namespace": "argocd",
+          "ownerReferences": [
+            {
+              "apiVersion": "argoproj.io/v1alpha1",
+              "kind": "ApplicationSet",
+              "name": "shop-services",
+              "uid": "shop-services-uid",
+              "controller": true
+            }
+          ]
         },
         "spec": {
           "project": "shop",
@@ -430,6 +514,202 @@
           "namespace": "argocd"
         }
       }
+    ],
+    "apps/ReplicaSet": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "metadata": {
+          "name": "storefront-7d9f6c5b8",
+          "namespace": "shop",
+          "labels": {
+            "app": "storefront"
+          },
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "Deployment",
+              "name": "storefront",
+              "uid": "storefront-uid",
+              "controller": true
+            }
+          ],
+          "creationTimestamp": "2026-10-13T11:56:30Z"
+        },
+        "spec": {
+          "replicas": 3
+        },
+        "status": {
+          "replicas": 3,
+          "readyReplicas": 2,
+          "availableReplicas": 2
+        }
+      },
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "metadata": {
+          "name": "storefront-5c8b9d7f4",
+          "namespace": "shop",
+          "labels": {
+            "app": "storefront"
+          },
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "Deployment",
+              "name": "storefront",
+              "uid": "storefront-uid",
+              "controller": true
+            }
+          ],
+          "creationTimestamp": "2026-10-11T12:00:00Z"
+        },
+        "spec": {
+          "replicas": 0
+        },
+        "status": {
+          "replicas": 0
+        }
+      }
+    ],
+    "/Pod": [
+      {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "metadata": {
+          "name": "storefront-7d9f6c5b8-2xkqp",
+          "namespace": "shop",
+          "labels": {
+            "app": "storefront"
+          },
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "ReplicaSet",
+              "name": "storefront-7d9f6c5b8",
+              "uid": "rs-uid",
+              "controller": true
+            }
+          ],
+          "creationTimestamp": "2026-10-13T11:56:31Z"
+        },
+        "status": {
+          "phase": "Running",
+          "conditions": [
+            {
+              "type": "Ready",
+              "status": "True"
+            }
+          ],
+          "containerStatuses": [
+            {
+              "name": "app",
+              "ready": true,
+              "restartCount": 0
+            }
+          ]
+        }
+      },
+      {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "metadata": {
+          "name": "storefront-7d9f6c5b8-8hjzt",
+          "namespace": "shop",
+          "labels": {
+            "app": "storefront"
+          },
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "ReplicaSet",
+              "name": "storefront-7d9f6c5b8",
+              "uid": "rs-uid",
+              "controller": true
+            }
+          ],
+          "creationTimestamp": "2026-10-13T11:56:31Z"
+        },
+        "status": {
+          "phase": "Running",
+          "conditions": [
+            {
+              "type": "Ready",
+              "status": "True"
+            }
+          ],
+          "containerStatuses": [
+            {
+              "name": "app",
+              "ready": true,
+              "restartCount": 0
+            }
+          ]
+        }
+      },
+      {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "metadata": {
+          "name": "storefront-7d9f6c5b8-x9vbn",
+          "namespace": "shop",
+          "labels": {
+            "app": "storefront"
+          },
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "ReplicaSet",
+              "name": "storefront-7d9f6c5b8",
+              "uid": "rs-uid",
+              "controller": true
+            }
+          ],
+          "creationTimestamp": "2026-10-13T11:56:31Z"
+        },
+        "status": {
+          "phase": "Running",
+          "conditions": [
+            {
+              "type": "Ready",
+              "status": "False"
+            }
+          ],
+          "containerStatuses": [
+            {
+              "name": "app",
+              "ready": false,
+              "restartCount": 4
+            }
+          ]
+        }
+      }
+    ],
+    "argoproj.io/ApplicationSet": [
+      {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "kind": "ApplicationSet",
+        "metadata": {
+          "name": "shop-services",
+          "namespace": "argocd"
+        },
+        "spec": {
+          "generators": [
+            {
+              "git": {
+                "repoURL": "https://github.com/acme/deploy.git",
+                "revision": "main",
+                "directories": [
+                  {
+                    "path": "apps/*"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
     ]
   },
   "presses": [
@@ -452,5 +732,35 @@
       },
       "answer": "cancelled"
     }
-  ]
+  ],
+  "events": {
+    "/Pod": {
+      "shop/storefront-7d9f6c5b8-x9vbn": [
+        {
+          "type": "Warning",
+          "reason": "Unhealthy",
+          "message": "Readiness probe failed: HTTP probe failed with statuscode: 503",
+          "count": 12,
+          "firstTimestamp": "2026-10-13T11:57:10Z",
+          "lastTimestamp": "2026-10-13T11:59:40Z"
+        },
+        {
+          "type": "Warning",
+          "reason": "BackOff",
+          "message": "Back-off restarting failed container app in pod storefront-7d9f6c5b8-x9vbn_shop(9f1e)",
+          "count": 4,
+          "firstTimestamp": "2026-10-13T11:58:00Z",
+          "lastTimestamp": "2026-10-13T11:59:20Z"
+        },
+        {
+          "type": "Normal",
+          "reason": "Pulled",
+          "message": "Container image \"ghcr.io/acme/storefront:4f1c9aa\" already present on machine",
+          "count": 5,
+          "firstTimestamp": "2026-10-13T11:56:40Z",
+          "lastTimestamp": "2026-10-13T11:59:10Z"
+        }
+      ]
+    }
+  }
 }

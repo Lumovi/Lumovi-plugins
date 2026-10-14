@@ -715,6 +715,8 @@ function nowCard(object: Object_): Described {
   const { waitingOn } = step(object)
   const [kind, name] = waitingOn && /^[^/\s]+\/[^/\s]+$/.test(waitingOn) ? waitingOn.split('/') : []
   const waited = kind && name ? resources(object).find((each) => each.kind === kind && each.name === name) : undefined
+  // (A hook isn't among what it manages: it's among the sync's results, running.)
+  const hook = !waited && kind && name ? syncResults(object).find((each) => each.hook && each.kind === kind && each.name === name) : undefined
   return h(
     'Card',
     { key: 'now', title: 'Now', ...(at_ >= 0 ? { about: `step ${at_ + 1} of ${run.length}` } : {}) },
@@ -725,8 +727,10 @@ function nowCard(object: Object_): Described {
             waiting: {
               lead: waited
                 ? { ...(waited.health ? { level: waited.health.level } : {}), name: waited.name, under: under(waited) }
-                : { name: waitingOn.slice(0, 253) },
-              said: (waited?.health?.message ?? operation(object)?.['message' as never] ?? waitingOn).slice(0, 500),
+                : hook
+                  ? { level: 'progressing', name: hook.name, under: under(hook) }
+                  : { name: waitingOn.slice(0, 253) },
+              said: (waited?.health?.message ?? hook?.message ?? operation(object)?.['message' as never] ?? waitingOn).slice(0, 500),
             },
           }
         : {}),

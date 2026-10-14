@@ -34,6 +34,8 @@ export const esbuildOf = (checkout) => createRequire(join(checkout, 'package.jso
 function lumoviCode(checkout, lines) {
   const built = esbuildOf(checkout).buildSync({
     stdin: { contents: lines.join('\n'), resolveDir: checkout, loader: 'ts' },
+    // (Lumovi's own names for its folders, as its build has them.)
+    alias: { '@shared': join(checkout, 'src/shared'), '@renderer': join(checkout, 'src/renderer/src') },
     bundle: true,
     platform: 'node',
     // (CommonJS: the parser's YAML package is, and an ES module can't require its parts.)
@@ -74,6 +76,14 @@ export function lumoviChanges(checkout) {
   return lumoviCode(checkout, [
     "export { filled, mayPropose, proposalProblem, sentProblem, startingValues } from './src/shared/plugin-changes.ts'",
   ])
+}
+
+/**
+ * How Lumovi fills in a file's patch, from the checkout: what one of its actions sends for an
+ * object, with the person's inputs.
+ */
+export function lumoviPatches(checkout) {
+  return lumoviCode(checkout, ["export { renderPatch } from './src/renderer/src/lib/plugins.ts'"])
 }
 
 /** Lumovi's own parser and what it reads a plugin to ask for, from the checkout. */

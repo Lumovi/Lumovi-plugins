@@ -155,8 +155,12 @@ test('a last sync says how it went and who started it; auto-sync says prune and 
     detail: 'Syncs when asked',
   })
   assert.equal(autoSync({ spec: { syncPolicy: { automated: { enabled: true } } } }).on, true)
-  // Its cluster: by name where it's given one, else its server.
-  assert.equal(cluster(named('storefront')), 'https://kubernetes.default.svc')
+  // Its cluster: by name where it's given one, else in-cluster for Argo CD's own, else its server.
+  assert.equal(cluster(named('storefront')), 'in-cluster')
+  assert.equal(
+    cluster({ spec: { destination: { server: 'https://10.0.0.1:6443', namespace: 'shop' } } }),
+    'https://10.0.0.1:6443',
+  )
   assert.equal(cluster({ spec: { destination: { name: 'prod-eu', namespace: 'shop' } } }), 'prod-eu')
 })
 
@@ -311,8 +315,8 @@ test('its Applications page lists every one, worst first, with its operation, re
   assert.deepEqual(
     rows.slice(0, 2).map(({ cells }) => [cells[2]!.word, cells[3]!.text, cells[4]!.text, cells[5]!.text]),
     [
-      ['Failed', 'main · 4f1c9aa', 'https://kubernetes.default.svc · batch', 'Off'],
-      ['Syncing', 'v2.4.1 · 4f1c9aa', 'https://kubernetes.default.svc · payments', 'Off'],
+      ['Failed', 'main · 4f1c9aa', 'in-cluster · batch', 'Off'],
+      ['Syncing', 'v2.4.1 · 4f1c9aa', 'in-cluster · payments', 'Off'],
     ],
   )
   // Its filter bar: health, sync, operation and project, and more; each row's values for them.
@@ -329,7 +333,7 @@ test('its Applications page lists every one, worst first, with its operation, re
     { filter: 'sync', value: 'Out of sync' },
     { filter: 'operation', value: 'Syncing' },
     { filter: 'project', value: 'shop' },
-    { filter: 'cluster', value: 'https://kubernetes.default.svc' },
+    { filter: 'cluster', value: 'in-cluster' },
     { filter: 'namespace', value: 'payments' },
     { filter: 'auto-sync', value: 'Off' },
   ])
@@ -694,6 +698,24 @@ test('while a sync runs, Now says where it is: its hooks and waves in order, eac
   assert.deepEqual(drawn.props.waiting, {
     lead: { level: 'progressing', name: 'storefront', under: 'Deployment · shop' },
     said: 'Waiting for rollout to finish: 1 of 3 updated replicas are available...',
+  })
+  // Waiting on a hook: the hook, as Argo CD's results have it, and its own message beside.
+  const [migrate, ...rest] = running.status.operationState.syncResult.resources
+  const hooked = {
+    ...running,
+    status: {
+      ...running.status,
+      operationState: {
+        ...running.status.operationState,
+        message: 'waiting for completion of hook batch/Job/db-migrate',
+        syncResult: { resources: [{ ...migrate!, hookPhase: 'Running', message: 'Job is running' }, ...rest] },
+      },
+    },
+  }
+  const waitingOnHook = (find(tab(hooked, () => {}, NOW), 'now')!.children![0] as Drawn).props.waiting
+  assert.deepEqual(waitingOnHook, {
+    lead: { level: 'progressing', name: 'db-migrate', under: 'Job · shop' },
+    said: 'Job is running',
   })
   // With nothing running, no Now.
   assert.equal(find(tab(named('storefront'), () => {}, NOW), 'now'), undefined)

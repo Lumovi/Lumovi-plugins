@@ -208,8 +208,17 @@ export function source(object: Object_): string {
 
 /** Where it deploys to: its destination's namespace, and its cluster (by name, else its server). */
 export const destination = (object: Object_) => text(at(object, 'spec', 'destination', 'namespace')) ?? ''
+
+/** The server of the cluster Argo CD runs in, as an Application names it. */
+const IN_CLUSTER = 'https://kubernetes.default.svc'
+
+/** Its cluster: by its name, else in-cluster where it's the one Argo CD runs in, else its server. */
 export const cluster = (object: Object_) =>
-  text(at(object, 'spec', 'destination', 'name')) ?? text(at(object, 'spec', 'destination', 'server')) ?? ''
+  text(at(object, 'spec', 'destination', 'name')) ??
+  // (The cluster Argo CD runs in, by its server: as Argo CD names it.)
+  (text(at(object, 'spec', 'destination', 'server')) === IN_CLUSTER ? 'in-cluster' : undefined) ??
+  text(at(object, 'spec', 'destination', 'server')) ??
+  ''
 
 /**
  * When it last synced, how that went and who started it. While one runs (its state has no end
@@ -341,7 +350,7 @@ export const refreshing = (object: Object_) =>
 export function onThisCluster(object: Object_): boolean {
   const name = text(at(object, 'spec', 'destination', 'name'))
   const server = text(at(object, 'spec', 'destination', 'server'))
-  return name === 'in-cluster' || (name === undefined && server === 'https://kubernetes.default.svc')
+  return name === 'in-cluster' || (name === undefined && server === IN_CLUSTER)
 }
 
 /** Where it deploys, said as a person reads it: its cluster, then its namespace. */
@@ -491,8 +500,11 @@ export function steps(object: Object_): Step[] | undefined {
 const waveOf = (all: readonly Resource[], result: SyncResult) =>
   all.find((each) => each.kind === result.kind && each.name === result.name && each.namespace === result.namespace)?.wave ?? 0
 
-/** What a running sync waits on, read from Argo CD's message where it has the shape it writes. */
-const WAITING_ON = /waiting for healthy state of ([^/\s]*)\/([^/\s]+)\/(\S+)/
+/**
+ * What a running sync waits on, read from Argo CD's message where it has a shape it writes: a
+ * resource's healthy state, or a hook's completion.
+ */
+const WAITING_ON = /waiting for (?:healthy state of|completion of hook) ([^/\s]*)\/([^/\s]+)\/(\S+)/
 
 /**
  * Where a running sync is: the hook phase while a hook of PreSync or PostSync runs; else where the

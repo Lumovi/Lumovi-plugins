@@ -4,7 +4,7 @@ kind: Plugin
 metadata:
   name: argo-cd
 spec:
-  version: 1.5.0
+  version: 1.5.1
   needs:
     lumovi: 1.22.0
   groups:
@@ -153,7 +153,8 @@ spec:
         - { name: Namespace, path: .spec.destination.namespace }
         - { name: Cluster, path: .spec.destination.name }
         - { name: Cluster server, path: .spec.destination.server }
-        - { name: Last synced, path: .status.operationState.finishedAt, type: date }
+        # (When it last synced: its history's last entry, which only a sync that finished has.)
+        - { name: Last synced, path: '.status.history[-1].deployedAt', type: date }
         - { name: Last checked, path: .status.reconciledAt, type: date }
       links:
         - name: Namespace
@@ -212,6 +213,9 @@ spec:
                 revision: '{{ input.revision }}'
                 prune: '{{ input.prune }}'
                 syncStrategy: '{{ input.strategy }}'
+                # Its own sync options, as Argo CD's own sync sends them (a manual sync doesn't
+                # take them from the Application): left out where it has none.
+                syncOptions: '{{ .spec.syncPolicy.syncOptions }}'
           done: Started syncing {{ .metadata.name }}
         # Terminate sync: Argo CD's own Terminate for a sync that runs (it sets the phase, on the
         # Application itself: its kind has no status subresource), and, for one asked for that Argo
@@ -223,9 +227,9 @@ spec:
           # The sync it was shown, and no other that started meanwhile.
           same: [.status.operationState.startedAt]
           confirm: Argo CD stops this sync where it is. What it has already applied stays applied, and the rest isn’t applied.
-          confirmTitle: Terminate {{ .metadata.name }}’s sync?
+          confirmTitle: Terminate the sync of {{ .metadata.name }}?
           patch: { status: { operationState: { phase: Terminating } } }
-          done: Terminating {{ .metadata.name }}’s sync
+          done: Terminating the sync of {{ .metadata.name }}
         - name: Terminate sync
           icon: square
           primary: true
@@ -238,9 +242,9 @@ spec:
           # The request it was shown, and no other put in its place meanwhile.
           same: [.operation]
           confirm: Argo CD hasn’t started this sync yet. Terminating it takes the request back, so it never runs.
-          confirmTitle: Terminate {{ .metadata.name }}’s sync?
+          confirmTitle: Terminate the sync of {{ .metadata.name }}?
           patch: { operation: null }
-          done: Took back {{ .metadata.name }}’s sync before it started
+          done: Took back the sync of {{ .metadata.name }} before it started
         # At once, a normal refresh; for several, Normal or Hard asked once.
         - name: Refresh
           runs: at-once

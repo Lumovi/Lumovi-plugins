@@ -35,6 +35,7 @@ import {
   scheduleWords,
   startedOf,
   tookOf,
+  tookSecondsOf,
   underWay,
   versionOf,
   worse,
@@ -233,6 +234,12 @@ function instancesCard(cluster: Handed, reads: Reads, retry: () => void): Descri
 }
 
 /** A backup as a row: its state, how it was made, when it started and how long it took. */
+/** How long a backup took: right-aligned as a number beside when it started, and sorted by it. */
+function took(object: Handed['object']) {
+  const seconds = tookSecondsOf(object)
+  return seconds === undefined ? { kind: 'none' } : { kind: 'number', value: seconds, text: tookOf(object)! }
+}
+
 function backupRow({ token, object }: Handed, group?: string) {
   const status = backupStatus(object)
   return {
@@ -243,7 +250,7 @@ function backupRow({ token, object }: Handed, group?: string) {
       said(methodOf(object)),
       { kind: 'status', level: status.level, word: status.word },
       age(startedOf(object)),
-      said(tookOf(object)),
+      took(object),
     ],
     opens: token,
   }
@@ -253,7 +260,7 @@ const BACKUP_COLUMNS = [
   { name: 'Method', kind: 'text' },
   { name: 'Status', kind: 'status' },
   { name: 'Started', kind: 'age', width: 'narrow', sorts: true },
-  { name: 'Took', kind: 'text', width: 'narrow' },
+  { name: 'Took', kind: 'number', width: 'narrow' },
 ]
 
 function backupsCard(cluster: Handed, reads: Reads, retry: () => void): Described {
@@ -569,7 +576,17 @@ function backupTiles(reads: Reads, now: number): Described {
   // and each cluster that has one.)
   const place = (backup: Handed) => `${namespaceOf(backup.object) ?? ''}/${ofCluster(backup.object) ?? ''}`
   const backedUpIn = new Set(inDay.map(place)).size
-  const failing = [...new Set(failed.map((backup) => ofCluster(backup.object) ?? nameOf(backup.object)))].sort()
+  // Each cluster a backup failed in, by its place as the day's count keys it; its namespace said
+  // only where two of them share a name.
+  const failedAt = [...new Map(failed.map((backup) => [place(backup), backup])).values()]
+  const named = (backup: Handed) => ofCluster(backup.object) ?? nameOf(backup.object)
+  const failing = failedAt
+    .map((backup) =>
+      failedAt.filter((other) => named(other) === named(backup)).length > 1
+        ? `${named(backup)} (${namespaceOf(backup.object) ?? ''})`
+        : named(backup),
+    )
+    .sort()
   const next = (schedules ?? [])
     // (Which is next can only be told of moments.)
     .map((schedule) => ({ schedule, at: momentOf(nextScheduledOf(schedule.object)) }))

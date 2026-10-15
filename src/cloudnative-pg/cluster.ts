@@ -273,11 +273,16 @@ export const startedOf = (backup: Object_) =>
   text(at(backup, 'status', 'startedAt')) ?? createdOf(backup)
 
 /** How long a backup took, once it's done: "4m 12s", "1h 02m", "45s". */
-export function tookOf(backup: Object_): string | undefined {
+export function tookSecondsOf(backup: Object_): number | undefined {
   const started = Date.parse(text(at(backup, 'status', 'startedAt')) ?? '')
   const stopped = Date.parse(text(at(backup, 'status', 'stoppedAt')) ?? '')
   if (Number.isNaN(started) || Number.isNaN(stopped) || stopped < started) return undefined
-  const seconds = Math.round((stopped - started) / 1000)
+  return Math.round((stopped - started) / 1000)
+}
+
+export function tookOf(backup: Object_): string | undefined {
+  const seconds = tookSecondsOf(backup)
+  if (seconds === undefined) return undefined
   const two = (n: number) => String(n).padStart(2, '0')
   if (seconds < 60) return `${seconds}s`
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${two(seconds % 60)}s`

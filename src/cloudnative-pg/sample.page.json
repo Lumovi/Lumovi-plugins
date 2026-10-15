@@ -311,7 +311,7 @@
                     },
                     {
                       "name": "Took",
-                      "kind": "text",
+                      "kind": "number",
                       "width": "narrow"
                     }
                   ],
@@ -337,7 +337,8 @@
                           "time": "2026-10-13T02:00:00Z"
                         },
                         {
-                          "kind": "text",
+                          "kind": "number",
+                          "value": 31,
                           "text": "31s"
                         }
                       ],
@@ -364,7 +365,8 @@
                           "time": "2026-10-11T02:00:00Z"
                         },
                         {
-                          "kind": "text",
+                          "kind": "number",
+                          "value": 580,
                           "text": "9m 40s"
                         }
                       ],

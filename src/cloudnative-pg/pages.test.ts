@@ -117,6 +117,29 @@ test('the Backups page: the last day counted, and every cluster’s backups wors
     'payments-reconciliation-ledger-db',
     'sessions-db',
   ])
+  // How long each took: a number, right-aligned beside when it started, said as it's read.
+  const took = prop<{ cells: { kind: string; value?: number; text?: string }[] }[]>(table, 'rows')
+    .map((row) => row.cells[3]!)
+    .find((cell) => cell.kind === 'number')!
+  assert.equal(typeof took.value, 'number')
+  assert.match(took.text!, /^\d+(s|m \d\ds|h \d\dm)$/)
+})
+
+test('two clusters of one name in two namespaces, a backup failed in each: counted and named apart', () => {
+  const all = handed('postgresql.cnpg.io/Backup')
+  const failed = all.find(
+    ({ object }) => (object.metadata as { name: string }).name === 'orders-db-20261013-0600',
+  )!
+  const elsewhere = structuredClone(failed.object)
+  ;(elsewhere.metadata as { namespace: string; name: string }).namespace = 'billing'
+  ;(elsewhere.metadata as { namespace: string; name: string }).name = 'orders-db-billing-0600'
+  const backups = [...all, { token: 'elsewhere', object: elsewhere }]
+  const page = backupsPage({ ...reads(), backups: { objects: backups } }, NOW, nothing)
+  const tiles = prop<{ key: string; value?: { text?: string }; detail?: string }[]>(named(page, 'Tiles')[0]!, 'tiles')
+  const tile = (key: string) => tiles.find((each) => each.key === key)!
+  assert.equal(tile('day').detail, 'across 5 clusters')
+  assert.equal(tile('failed').value?.text, '3')
+  assert.equal(tile('failed').detail, 'orders-db (billing), orders-db (shop), reports-db')
 })
 
 test('a time the operator wrote that isn’t a moment: a tile says it as it’s written, a table’s age nothing', () => {

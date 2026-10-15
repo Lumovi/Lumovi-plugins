@@ -558,8 +558,8 @@ function backupTiles(reads: Reads, now: number): Described {
       key: 'tiles',
       tiles: [
         { key: 'day', icon: 'database', label: 'Backups in the last day' },
-        { key: 'failed', icon: 'circle-x', label: 'Failed in the last day' },
-        { key: 'none', icon: 'clock', label: 'Not backed up in a day' },
+        { key: 'failed', icon: 'flame', label: 'Failed in the last day' },
+        { key: 'none', icon: 'archive', label: 'Not backed up in a day' },
         { key: 'next', icon: 'timer', label: 'Next scheduled' },
       ],
     })
@@ -584,7 +584,7 @@ function backupTiles(reads: Reads, now: number): Described {
       },
       {
         key: 'failed',
-        icon: 'circle-x',
+        icon: 'flame',
         label: 'Failed in the last day',
         value: { kind: 'figure', text: String(failed.length) },
         level: failed.length ? 'critical' : 'healthy',
@@ -593,7 +593,7 @@ function backupTiles(reads: Reads, now: number): Described {
       },
       {
         key: 'none',
-        icon: 'clock',
+        icon: 'archive',
         label: 'Not backed up in a day',
         value: { kind: 'figure', text: String(without.length) },
         level: without.length ? 'warning' : 'healthy',

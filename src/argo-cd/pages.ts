@@ -163,7 +163,7 @@ export function applications(got: Got, retry: () => void): Described {
       const to = deploysTo(object)
       return {
         key: token,
-        lead: { level, name: nameOf(object), beside: projectOf(object), under: source(object) },
+        lead: { level, name: nameOf(object), under: [projectOf(object), source(object)].filter(Boolean).join(' · ') },
         facets: facetsOf(object),
         cells: [
           { kind: 'status', level, word },

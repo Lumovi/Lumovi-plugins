@@ -99,8 +99,10 @@ test('the Backups page: the last day counted, and every cluster’s backups wors
   const tile = (key: string) => tiles.find((each) => each.key === key)!
   // Since 12:00 yesterday: orders-db's six, reports-db's failed one, sessions-db's and the ledger's.
   assert.equal(tile('day').value?.text, '9')
-  assert.equal(tile('day').detail, 'across 3 clusters')
+  assert.equal(tile('day').detail, 'across 4 clusters')
   assert.equal(tile('failed').value?.text, '2')
+  // Both clusters a backup failed in, as the table shows them.
+  assert.equal(tile('failed').detail, 'orders-db, reports-db')
   assert.equal(tile('none').value?.text, '1')
   assert.equal(tile('none').detail, 'reports-db')
   assert.deepEqual(tile('next').value, { kind: 'time', time: '2026-10-13T12:04:00Z' })

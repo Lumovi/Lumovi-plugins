@@ -564,8 +564,12 @@ function backupTiles(reads: Reads, now: number): Described {
       ],
     })
   }
-  const { inDay, failed, backedUp, without } = lastDay(reads, now)
-  const latestFailed = [...failed].sort(latestFirst)[0]
+  const { inDay, failed, without } = lastDay(reads, now)
+  // (Counted as the table under them shows them: every backup started in the day, failed ones too,
+  // and each cluster that has one.)
+  const place = (backup: Handed) => `${namespaceOf(backup.object) ?? ''}/${ofCluster(backup.object) ?? ''}`
+  const backedUpIn = new Set(inDay.map(place)).size
+  const failing = [...new Set(failed.map((backup) => ofCluster(backup.object) ?? nameOf(backup.object)))].sort()
   const next = (schedules ?? [])
     // (Which is next can only be told of moments.)
     .map((schedule) => ({ schedule, at: momentOf(nextScheduledOf(schedule.object)) }))
@@ -579,7 +583,7 @@ function backupTiles(reads: Reads, now: number): Described {
         icon: 'database',
         label: 'Backups in the last day',
         value: { kind: 'figure', text: String(inDay.length) },
-        detail: `across ${counted(backedUp.size, 'cluster')}`,
+        detail: `across ${counted(backedUpIn, 'cluster')}`,
         ...cutIn(reads.backups),
       },
       {
@@ -588,7 +592,12 @@ function backupTiles(reads: Reads, now: number): Described {
         label: 'Failed in the last day',
         value: { kind: 'figure', text: String(failed.length) },
         level: failed.length ? 'critical' : 'healthy',
-        detail: latestFailed ? (ofCluster(latestFailed.object) ?? nameOf(latestFailed.object)) : 'None failed',
+        detail:
+          failing.length === 0
+            ? 'None failed'
+            : failing.length <= 3
+              ? failing.join(', ')
+              : `in ${counted(failing.length, 'cluster')}`,
         ...(failed.length ? { opens: { list: 'postgresql.cnpg.io/Backup', health: ['critical'] } } : {}),
       },
       {

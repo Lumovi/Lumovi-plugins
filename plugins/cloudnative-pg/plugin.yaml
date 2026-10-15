@@ -4,7 +4,7 @@ kind: Plugin
 metadata:
   name: cloudnative-pg
 spec:
-  version: 1.2.3
+  version: 1.2.4
   needs:
     lumovi: 1.22.0
   groups:

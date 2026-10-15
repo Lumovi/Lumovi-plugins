@@ -30,7 +30,7 @@
                 "text": "3"
               },
               "level": "healthy",
-              "detail": "of 5 targets"
+              "detail": "of 5 targets, from 1 of 2 namespaces"
             },
             {
               "key": "down",
@@ -41,7 +41,7 @@
                 "text": "1"
               },
               "level": "critical",
-              "detail": "of 5 targets"
+              "detail": "of 5 targets, from 1 of 2 namespaces"
             },
             {
               "key": "unknown",
@@ -52,7 +52,7 @@
                 "text": "1"
               },
               "level": "neutral",
-              "detail": "not scraped yet"
+              "detail": "not scraped yet, from 1 of 2 namespaces"
             }
           ]
         },

@@ -213,19 +213,25 @@ function downCard(places: readonly Place[], servers: ReadonlyMap<string, Asked>)
   )
 }
 
-/** Up, down and unknown in all the namespaces that answered. */
+/**
+ * Up, down and unknown in all the namespaces whose server answered; none until one has (each card
+ * says why its own didn't): nothing is counted, nor said well, that wasn't read. Where only some
+ * were read, the tiles say how many, and a zero of Down or Unknown isn't drawn as all clear.
+ */
 function tiles(places: readonly Place[], servers: ReadonlyMap<string, Asked>): Described {
-  const all = places.flatMap(({ namespace }) => {
+  const read = places.flatMap(({ namespace }) => {
     const asked = servers.get(namespace)
-    return (asked && 'json' in asked ? targetsOf(asked.json) : undefined) ?? []
+    const targets = asked && 'json' in asked ? targetsOf(asked.json) : undefined
+    return targets ? [targets] : []
   })
-  const answered = places.filter(({ namespace }) => {
-    const asked = servers.get(namespace)
-    return asked && 'json' in asked && targetsOf(asked.json)
-  }).length
+  if (read.length === 0) return null
+  const all = read.flat()
+  const whole = read.length === places.length
   const of = (health: Target['health']) => all.filter((target) => target.health === health).length
-  // (A server that didn't answer is said in its own card.)
-  const detail = `of ${counted(all.length, 'target')}`
+  const from = whole ? '' : `, from ${read.length} of ${counted(places.length, 'namespace')}`
+  const detail = `of ${counted(all.length, 'target')}${from}`
+  // (A zero is all clear only where every namespace's server said so.)
+  const clear = whole ? 'healthy' : 'neutral'
   return h('Tiles', {
     key: 'tiles',
     tiles: [
@@ -234,7 +240,9 @@ function tiles(places: readonly Place[], servers: ReadonlyMap<string, Asked>): D
         icon: 'activity',
         label: 'Up',
         value: { kind: 'figure', text: String(of('up')) },
-        level: 'healthy',
+        // Green only where one is: none up of those read fails where any is down, and is a
+        // warning where they're only not scraped yet.
+        level: of('up') > 0 ? 'healthy' : all.length === 0 ? 'neutral' : of('down') > 0 ? 'critical' : 'warning',
         detail,
       },
       {
@@ -242,7 +250,7 @@ function tiles(places: readonly Place[], servers: ReadonlyMap<string, Asked>): D
         icon: 'flame',
         label: 'Down',
         value: { kind: 'figure', text: String(of('down')) },
-        level: of('down') > 0 ? 'critical' : 'healthy',
+        level: of('down') > 0 ? 'critical' : clear,
         detail,
       },
       {
@@ -251,8 +259,8 @@ function tiles(places: readonly Place[], servers: ReadonlyMap<string, Asked>): D
         label: 'Unknown',
         value: { kind: 'figure', text: String(of('unknown')) },
         // (Not scraped yet is a moment, not a problem.)
-        level: of('unknown') > 0 ? 'neutral' : 'healthy',
-        detail: 'not scraped yet',
+        level: of('unknown') > 0 ? 'neutral' : clear,
+        detail: `not scraped yet${from}`,
       },
     ],
   })

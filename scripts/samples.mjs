@@ -826,5 +826,12 @@ export async function sampleProblems({ door, changes, plugin, code, folder, writ
       problems.push(`what it proposes isn’t ${PROPOSALS} (to see what it proposes: --write, and git diff)`)
     }
   }
+  // Every other page of its file, on the same objects: one its sample doesn't open is held to all
+  // Lumovi holds a page to as well (an icon Lumovi doesn't draw stops it, as any refusal does).
+  for (const { id } of plugin.added.pages) {
+    if (sample.opens?.page === id) continue
+    const other = await samplePage({ door, plugin, code, sample: { ...sample, opens: { page: id }, presses: [] } })
+    problems.push(...other.problems.map((problem) => `its page ${id}: ${problem}`))
+  }
   return problems.map((problem) => `${at(SAMPLE)}: ${problem}`)
 }

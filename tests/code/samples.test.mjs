@@ -442,6 +442,23 @@ test('the page it gives is the one written beside its sample: written with --wri
   ])
 })
 
+test('every page its file has runs on its sample too, not only the one its sample opens', async () => {
+  const folder = mkdtempSync(join(tmpdir(), 'sample-'))
+  cpSync(join(TINY, SAMPLE), join(folder, SAMPLE))
+  const two = { ...plugin, added: { ...plugin.added, pages: [...plugin.added.pages, { id: 'later', title: 'Later' }] } }
+  // Its sample's page draws nothing; the other, a tile with an icon Lumovi doesn't draw.
+  const tile = JSON.stringify(
+    JSON.stringify({ commit: [['make', 1, 'Tiles', { tiles: [{ key: 'a', icon: 'clock', label: 'A' }] }], ['put', 0, 1]] }),
+  )
+  const code = `box.then(({ post, listen }) => listen((said) => { const open = JSON.parse(said).open; if (open && open.page === 'later') post(${tile}) }))`
+  const problems = await sampleProblems({ door, plugin: two, code, folder, write: true })
+  assert.equal(problems.length, 1)
+  assert.match(
+    problems[0],
+    /: its page later: Lumovi’s door stopped it: step 1: Tiles\.tiles\[0\]\.icon: should be one of /,
+  )
+})
+
 test('the checks’ summary marks what Lumovi’s pages mark, spelled as the pinned Lumovi spells it', () => {
   spellWith(reader.spelled)
   try {

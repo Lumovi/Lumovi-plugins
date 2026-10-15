@@ -828,6 +828,7 @@ export async function sampleProblems({ door, changes, plugin, code, folder, writ
   }
   // Every other page of its file, on the same objects: one its sample doesn't open is held to all
   // Lumovi holds a page to as well (an icon Lumovi doesn't draw stops it, as any refusal does).
+  // Only as it opens: nothing is pressed on them, so what a press would bring isn't seen there.
   for (const { id } of plugin.added.pages) {
     if (sample.opens?.page === id) continue
     const other = await samplePage({ door, plugin, code, sample: { ...sample, opens: { page: id }, presses: [] } })

@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Described, Part } from '../runtime/index.ts'
-import { placesOf, targetsPage } from './pages.ts'
+import { placesOf, targetsPage, type Asked } from './pages.ts'
 import { poolLevel, poolsOf, targetsOf } from './targets.ts'
 
 const answer = (activeTargets: unknown) => ({ status: 'success', data: { activeTargets } })
@@ -130,4 +130,66 @@ test('a card says where its targets are from: its namespace, whose answer it is,
   )
   // (A card's line of where its data comes from is at most 240 characters.)
   for (const about of [ONE, several('the other'), several('another')]) assert.ok(about.length <= 240, about)
+})
+
+/** The page's tiles, where it draws them, for a Prometheus in each of `namespaces` and what each said. */
+function tilesOf(namespaces: readonly string[], said: Record<string, Asked>) {
+  const parts = (described: Described): Part[] =>
+    !described || typeof described !== 'object' ? [] : [described, ...(described.children ?? []).flatMap(parts)]
+  const page = targetsPage(
+    { objects: namespaces.map((namespace) => ({ token: `t-${namespace}`, object: { metadata: { name: 'k8s', namespace } } })) },
+    new Map(Object.entries(said)),
+    () => {},
+    () => {},
+  )
+  const tiles = parts(page).find((each) => each.part === 'Tiles')
+  return tiles?.props?.tiles as { key: string; value: { text: string }; level: string; detail: string }[] | undefined
+}
+
+const up = { labels: { instance: 'a:9100' }, scrapePool: 'serviceMonitor/monitoring/node/0', health: 'up' }
+
+test('no server answered (none can be asked, or none yet): no tiles, and nothing said well', () => {
+  const refused = { ended: 'You may not reach monitoring/prometheus-operated (services/proxy).' }
+  assert.equal(tilesOf(['monitoring', 'team-a'], { monitoring: refused, 'team-a': refused }), undefined)
+  assert.equal(tilesOf(['monitoring'], {}), undefined)
+  assert.equal(tilesOf(['monitoring'], { monitoring: { json: 'not Prometheus' } }), undefined)
+})
+
+test('some namespaces’ servers answered: the tiles say how many were read, and a zero isn’t all clear', () => {
+  const tiles = tilesOf(['monitoring', 'team-a'], {
+    monitoring: { json: answer([up, { ...up, labels: { instance: 'b:9100' } }]) },
+    'team-a': { ended: 'It took too long to answer.' },
+  })!
+  assert.deepEqual(
+    tiles.map(({ key, value, level, detail }) => [key, value.text, level, detail]),
+    [
+      ['up', '2', 'healthy', 'of 2 targets, from 1 of 2 namespaces'],
+      ['down', '0', 'neutral', 'of 2 targets, from 1 of 2 namespaces'],
+      ['unknown', '0', 'neutral', 'not scraped yet, from 1 of 2 namespaces'],
+    ],
+  )
+})
+
+test('every namespace’s server answered: what they say, all clear where it is', () => {
+  const tiles = tilesOf(['monitoring', 'team-a'], {
+    monitoring: { json: answer([up]) },
+    'team-a': { json: answer([{ ...up, health: 'down' }]) },
+  })!
+  assert.deepEqual(
+    tiles.map(({ key, value, level, detail }) => [key, value.text, level, detail]),
+    [
+      ['up', '1', 'healthy', 'of 2 targets'],
+      ['down', '1', 'critical', 'of 2 targets'],
+      ['unknown', '0', 'healthy', 'not scraped yet'],
+    ],
+  )
+})
+
+test('none up of the targets read isn’t green: failing where any is down, a warning where they’re not scraped yet', () => {
+  const level = (targets: unknown[]) =>
+    tilesOf(['monitoring'], { monitoring: { json: answer(targets) } })!.find(({ key }) => key === 'up')!.level
+  assert.equal(level([{ ...up, health: 'down' }, { ...up, labels: { instance: 'b:9100' }, health: 'down' }]), 'critical')
+  assert.equal(level([{ ...up, health: 'unknown' }]), 'warning')
+  assert.equal(level([]), 'neutral')
+  assert.equal(level([up, { ...up, labels: { instance: 'b:9100' }, health: 'down' }]), 'healthy')
 })

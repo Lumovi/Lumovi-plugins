@@ -714,6 +714,7 @@ const FILE_KEYS = [
   'switch',
   'choices',
   'harm',
+  'withholds',
 ]
 
 /** Whether version `a` is older than `b`: three numbers each. */
@@ -762,6 +763,7 @@ export function needsProblems({ plugin, used, since, version }) {
       : []),
     ...(plugin.showsSecrets.length > 0 ? [['its file’s showsSecrets', since.file.showsSecrets]] : []),
     ...((plugin.views ?? []).some((view) => view.manages) ? [['a view’s manages', since.file.manages]] : []),
+    ...((plugin.views ?? []).some((view) => view.withholds) ? [['a view’s withholds', since.file.withholds]] : []),
     ...((plugin.changes ?? []).length > 0 ? [['its file’s changes', since.file.changes]] : []),
     ...((plugin.opens ?? []).length > 0 ? [['its file’s opens', since.file.opens]] : []),
     ...((plugin.links ?? []).length > 0 ? [['its file’s links', since.file.links]] : []),

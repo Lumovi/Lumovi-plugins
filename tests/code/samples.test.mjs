@@ -234,6 +234,8 @@ test('the Lumovi a plugin needs carries all it uses of the door: what its file s
     [{ views: [{ actions: [{ inputs: [{ name: 'prune', type: 'switch' }] }] }] }, 'switch', 'an input that’s a switch'],
     [{ views: [{ actions: [{ inputs: [{ name: 'how', type: 'choice', choices: [] }] }] }] }, 'choices', 'an input’s choices'],
     [{ changes: [{ kind: 'argoproj.io/Application', actions: ['patch'], harm: [] }] }, 'harm', 'a change’s harm'],
+    // Fields a view withholds: an older Lumovi would show them.
+    [{ views: [{ withholds: [{ path: 'report.secrets.match', keys: ['report', 'secrets', 'match'] }] }] }, 'withholds', 'a view’s withholds'],
   ]) {
     assert.deepEqual(
       needsProblems({

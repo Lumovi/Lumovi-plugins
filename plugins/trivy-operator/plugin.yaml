@@ -4,9 +4,9 @@ kind: Plugin
 metadata:
   name: trivy-operator
 spec:
-  version: 1.0.0
+  version: 1.1.0
   needs:
-    lumovi: 1.22.0
+    lumovi: 1.23.0
   groups:
     - aquasecurity.github.io
   label: Trivy
@@ -66,13 +66,46 @@ spec:
         - name: Workload
           kind: "{{ .metadata.labels['trivy-operator.resource.kind'] }}"
           objectName: "{{ .metadata.labels['trivy-operator.resource.name'] }}"
-    # Misconfigurations, secrets in images and risky RBAC: checks that failed, by severity.
+    # Misconfigurations and risky RBAC: checks that failed, by severity.
     - name: trivy-findings
       kinds:
         - { group: aquasecurity.github.io, kind: ConfigAuditReport }
-        - { group: aquasecurity.github.io, kind: ExposedSecretReport }
         - { group: aquasecurity.github.io, kind: RbacAssessmentReport }
         - { group: aquasecurity.github.io, kind: ClusterRbacAssessmentReport }
+      icon: file-check
+      columns:
+        - { name: Resource, path: ".metadata.labels['trivy-operator.resource.name']" }
+        - { name: Critical, path: .report.summary.criticalCount, type: number, default: '0' }
+        - { name: High, path: .report.summary.highCount, type: number, default: '0' }
+        - { name: Medium, path: .report.summary.mediumCount, type: number, default: '0' }
+        - { name: Low, path: .report.summary.lowCount, type: number, default: '0' }
+      status:
+        - when:
+            all:
+              - { path: .report.summary.criticalCount, exists: true }
+              - { path: .report.summary.criticalCount, notEquals: 0 }
+          health: critical
+          label: '{{ .report.summary.criticalCount }} critical'
+        - when:
+            all:
+              - { path: .report.summary.highCount, exists: true }
+              - { path: .report.summary.highCount, notEquals: 0 }
+          health: warning
+          label: '{{ .report.summary.highCount }} high'
+        - health: healthy
+          label: No critical or high
+      details:
+        - { name: Resource, path: ".metadata.labels['trivy-operator.resource.kind']" }
+        - { name: Scanned, path: .report.updateTimestamp, type: date }
+      links:
+        - name: Resource
+          kind: "{{ .metadata.labels['trivy-operator.resource.kind'] }}"
+          objectName: "{{ .metadata.labels['trivy-operator.resource.name'] }}"
+    # Secrets found in images, by severity. The line each was found on is never shown: Trivy
+    # stars the secret, not what's around it.
+    - name: trivy-exposed-secret-reports
+      kinds:
+        - { group: aquasecurity.github.io, kind: ExposedSecretReport }
       icon: file-check
       columns:
         - { name: Resource, path: ".metadata.labels['trivy-operator.resource.name']" }
@@ -103,6 +136,9 @@ spec:
         - name: Resource
           kind: "{{ .metadata.labels['trivy-operator.resource.kind'] }}"
           objectName: "{{ .metadata.labels['trivy-operator.resource.name'] }}"
+      withholds:
+        - path: report.secrets.match
+          why: The line where Trivy found a secret, which can give the secret away.
     - name: trivy-compliance-reports
       kinds:
         - { group: aquasecurity.github.io, kind: ClusterComplianceReport }

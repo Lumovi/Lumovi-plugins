@@ -559,12 +559,24 @@ function thisSync(object: Object_): Described {
     }
   })
   const title = op ? 'This sync' : 'Last sync'
+  // (A sync that ended with no result for each resource, or one Argo CD keeps only in its history:
+  // how it went, as the tiles say it, and why there's nothing to list, not "No sync yet".)
+  const last = op || table.length > 0 ? undefined : lastSync(object)
+  const none = !at(object, 'status', 'operationState', 'finishedAt')
+    ? 'Argo CD didn’t keep what this sync did to each resource.'
+    : at(object, 'status', 'operationState', 'phase') === 'Succeeded'
+      ? 'This sync had nothing to apply.'
+      : 'This sync ended before it applied anything.'
   return h(
     'Card',
     {
       key: 'this-sync',
       title,
-      ...(results.length > 0 ? { about: `${counted(results.length - hooks, 'resource')}, ${counted(hooks, 'hook')}` } : {}),
+      ...(results.length > 0
+        ? { about: `${counted(results.length - hooks, 'resource')}, ${counted(hooks, 'hook')}` }
+        : last
+          ? { about: last.how }
+          : {}),
     },
     h('Table', {
       title,
@@ -578,7 +590,11 @@ function thisSync(object: Object_): Described {
       ],
       rows: table,
       shows: ROWS,
-      ...(table.length === 0 ? { state: { is: 'empty', title: 'No sync yet', line: 'A sync’s result shows here once one has run.' } } : {}),
+      ...(last
+        ? { state: { is: 'quiet', line: none } }
+        : table.length === 0
+          ? { state: { is: 'empty', title: 'No sync yet', line: 'A sync’s result shows here once one has run.' } }
+          : {}),
     }),
   )
 }

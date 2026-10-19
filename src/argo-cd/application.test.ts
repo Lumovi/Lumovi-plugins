@@ -577,6 +577,52 @@ test('its resources are a graph: what it manages, its hooks, and here its Replic
   assert.deepEqual(remote.graph.props.legend, { marked: 'Out of sync' })
 })
 
+test('a last sync with no result for each resource says how it went, as the tiles do: not “No sync yet”', () => {
+  const card = (object: Object_) => {
+    const drawn = tab(object, () => {}, NOW)
+    const sync = find(drawn, 'this-sync')!
+    const tiles = find(drawn, 'tiles')!.props.tiles as { key: string }[]
+    return { about: sync.props.about, state: (sync.children![0] as Drawn).props.state, tile: tiles.find(({ key }) => key === 'last-synced') }
+  }
+  const quiet = (line: string) => ({ is: 'quiet', line })
+  const tile = (more: object) => ({ key: 'last-synced', icon: 'timer', label: 'Last synced', ...more })
+  // Its controller restarted: no state of its last sync, only its history, newest first.
+  const restarted = {
+    status: {
+      history: [
+        { id: 1, revision: 'a'.repeat(40), deployedAt: '2026-10-13T10:00:00Z' },
+        { id: 2, revision: 'b'.repeat(40), deployedAt: '2026-10-14T11:00:00Z' },
+      ],
+    },
+  }
+  assert.deepEqual(card(restarted), {
+    about: 'Succeeded',
+    state: quiet('Argo CD didn’t keep what this sync did to each resource.'),
+    tile: tile({ value: { kind: 'time', time: '2026-10-14T11:00:00Z' }, detail: 'Succeeded' }),
+  })
+  // Ended before it applied anything: how it ended, and who started it, in both.
+  assert.deepEqual(card(named('legacy-batch')), {
+    about: 'Failed, by admin',
+    state: quiet('This sync ended before it applied anything.'),
+    tile: tile({ value: { kind: 'time', time: '2026-10-13T10:00:00Z' }, detail: 'Failed, by admin' }),
+  })
+  // Succeeded with nothing to apply.
+  const nothing = { status: { operationState: { phase: 'Succeeded', finishedAt: '2026-10-14T11:00:00Z', syncResult: { resources: [] } } } }
+  assert.deepEqual(card(nothing), {
+    about: 'Succeeded',
+    state: quiet('This sync had nothing to apply.'),
+    tile: tile({ value: { kind: 'time', time: '2026-10-14T11:00:00Z' }, detail: 'Succeeded' }),
+  })
+  // Never synced: no sync yet, in both.
+  assert.deepEqual(card({ status: {} }), {
+    about: undefined,
+    state: { is: 'empty', title: 'No sync yet', line: 'A sync’s result shows here once one has run.' },
+    tile: tile({ value: { kind: 'words', text: 'Not yet' } }),
+  })
+  // With its results: counted, and no state.
+  assert.equal(card(named('storefront')).state, undefined)
+})
+
 test('this sync’s result in phase and wave order, and every problem in one place, worst first, the warnings of what isn’t well among them', () => {
   const rows = (object: Object_, key: string, read = around()) =>
     (find(tab(object, () => {}, NOW, undefined, read), key)!.children![0] as Drawn).props.rows as {

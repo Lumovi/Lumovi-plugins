@@ -4,7 +4,7 @@ kind: Plugin
 metadata:
   name: argo-cd
 spec:
-  version: 1.5.2
+  version: 1.5.3
   needs:
     lumovi: 1.22.0
   groups:

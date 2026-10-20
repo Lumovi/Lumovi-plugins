@@ -550,6 +550,12 @@ test('its resources are a graph: what it manages, its hooks, and here its Replic
       ['3 Pods', 'storefront-7d9f6c5b8-…', undefined, '2 ready', undefined],
     ],
   )
+  // Every card has its icon: its kind's, from what it opens or goes to, or one it names. (Several
+  // Pods open none: theirs is named, the Pod's.)
+  const iconless = (all: { kind: string; opens?: string; goes?: unknown; icon?: string }[]) =>
+    all.filter((node) => !node.opens && !node.goes && !node.icon).map(({ kind }) => kind)
+  assert.deepEqual(iconless(nodes), [])
+  assert.equal((nodes.at(-1) as { icon?: string }).icon, 'box')
   const edges = drawn.props.edges as { from: string; to: string }[]
   assert.deepEqual(edges.slice(-2), [
     { from: 'r:apps/Deployment/shop/storefront', to: 'rs:ReplicaSet-0' },

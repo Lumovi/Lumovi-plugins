@@ -488,7 +488,8 @@ function resourcesCard(object: Object_, around: Around): Described {
         kind: counted(pods.length, 'Pod'),
         status,
         cells: [{ kind: 'none' }, statusCell(status)],
-        ...(one ? { opens: one.token } : {}),
+        // (One opens, and has its kind's icon from what it opens; several, the Pod's icon, named.)
+        ...(one ? { opens: one.token } : iconOf('Pod')),
       })
       if (from) edges.push({ from, to: key })
     }

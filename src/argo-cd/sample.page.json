@@ -272,7 +272,8 @@
                       "level": "warning",
                       "word": "2 ready"
                     }
-                  ]
+                  ],
+                  "icon": "box"
                 }
               ],
               "edges": [

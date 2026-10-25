@@ -1,0 +1,1195 @@
+{
+  "now": "2026-10-13T12:00:00Z",
+  "opens": {
+    "page": "security"
+  },
+  "objects": {
+    "aquasecurity.github.io/VulnerabilityReport": [
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "VulnerabilityReport",
+        "metadata": {
+          "name": "replicaset-storefront-7d9f8c6b5-web",
+          "namespace": "shop",
+          "labels": {
+            "trivy-operator.resource.kind": "ReplicaSet",
+            "trivy-operator.resource.name": "storefront-7d9f8c6b5",
+            "trivy-operator.resource.namespace": "shop",
+            "trivy-operator.container.name": "web"
+          },
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "ReplicaSet",
+              "name": "storefront-7d9f8c6b5",
+              "uid": "storefront-7d9f8c6b5-uid",
+              "controller": true,
+              "blockOwnerDeletion": false
+            }
+          ]
+        },
+        "report": {
+          "updateTimestamp": "2026-10-13T09:00:00Z",
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "registry": {
+            "server": "index.docker.io"
+          },
+          "artifact": {
+            "repository": "library/nginx",
+            "tag": "1.25.3",
+            "digest": "sha256:4c0fdaa8b6341bfdeca5f18f7837462c80cff90527ee35ef185571e1c327beac"
+          },
+          "os": {
+            "family": "debian",
+            "name": "12.4"
+          },
+          "summary": {
+            "criticalCount": 1,
+            "highCount": 3,
+            "mediumCount": 1,
+            "lowCount": 2,
+            "unknownCount": 0,
+            "noneCount": 0
+          },
+          "vulnerabilities": [
+            {
+              "vulnerabilityID": "CVE-2023-45853",
+              "severity": "CRITICAL",
+              "resource": "zlib1g",
+              "installedVersion": "1:1.2.13.dfsg-1",
+              "fixedVersion": "",
+              "title": "zlib: integer overflow and resultant heap-based buffer overflow in zipOpenNewFileInZip4_6",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2023-45853",
+              "score": 9.8,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2024-6387",
+              "severity": "HIGH",
+              "resource": "openssh-client",
+              "installedVersion": "1:9.2p1-2+deb12u1",
+              "fixedVersion": "1:9.2p1-2+deb12u3",
+              "title": "openssh: regreSSHion: race condition in the signal handler of sshd",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2024-6387",
+              "score": 8.1,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2023-44487",
+              "severity": "HIGH",
+              "resource": "libnghttp2-14",
+              "installedVersion": "1.52.0-1",
+              "fixedVersion": "1.52.0-1+deb12u1",
+              "title": "HTTP/2: Multiple HTTP/2 enabled web servers are vulnerable to a DDoS attack (Rapid Reset Attack)",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2023-44487",
+              "score": 7.5,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2024-2961",
+              "severity": "HIGH",
+              "resource": "libc6",
+              "installedVersion": "2.36-9+deb12u4",
+              "fixedVersion": "2.36-9+deb12u7",
+              "title": "glibc: out of bounds write in iconv may lead to remote code execution",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2024-2961",
+              "score": 7.3,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2024-28182",
+              "severity": "MEDIUM",
+              "resource": "libnghttp2-14",
+              "installedVersion": "1.52.0-1",
+              "fixedVersion": "1.52.0-1+deb12u2",
+              "title": "nghttp2: CONTINUATION frames DoS",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2024-28182",
+              "score": 5.3,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2022-0563",
+              "severity": "LOW",
+              "resource": "util-linux",
+              "installedVersion": "2.38.1-5+b1",
+              "fixedVersion": "",
+              "title": "util-linux: partial disclosure of arbitrary files in chfn and chsh when compiled with libreadline",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2022-0563",
+              "score": 5.5,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2011-3374",
+              "severity": "LOW",
+              "resource": "apt",
+              "installedVersion": "2.6.1",
+              "fixedVersion": "",
+              "title": "It was found that apt-key in apt, all versions, do not correctly validate gpg keys with the master keyring, leading to a potential man-in-the-middle attack.",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2011-3374",
+              "score": 3.7,
+              "target": ""
+            }
+          ]
+        }
+      },
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "VulnerabilityReport",
+        "metadata": {
+          "name": "replicaset-storefront-7d9f8c6b5-app",
+          "namespace": "shop",
+          "labels": {
+            "trivy-operator.resource.kind": "ReplicaSet",
+            "trivy-operator.resource.name": "storefront-7d9f8c6b5",
+            "trivy-operator.resource.namespace": "shop",
+            "trivy-operator.container.name": "app"
+          },
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "ReplicaSet",
+              "name": "storefront-7d9f8c6b5",
+              "uid": "storefront-7d9f8c6b5-uid",
+              "controller": true,
+              "blockOwnerDeletion": false
+            }
+          ]
+        },
+        "report": {
+          "updateTimestamp": "2026-10-13T09:00:00Z",
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "registry": {
+            "server": "ghcr.io"
+          },
+          "artifact": {
+            "repository": "acme/storefront",
+            "tag": "2.4.1",
+            "digest": "sha256:9a1b7c3e5d2f4a6b8c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b"
+          },
+          "summary": {
+            "criticalCount": 2,
+            "highCount": 1,
+            "mediumCount": 0,
+            "lowCount": 0,
+            "unknownCount": 0,
+            "noneCount": 0
+          },
+          "vulnerabilities": [
+            {
+              "vulnerabilityID": "CVE-2024-45337",
+              "severity": "CRITICAL",
+              "resource": "golang.org/x/crypto",
+              "installedVersion": "v0.28.0",
+              "fixedVersion": "0.31.0",
+              "title": "golang.org/x/crypto/ssh: Misuse of ServerConfig.PublicKeyCallback may cause authorization bypass",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2024-45337",
+              "score": 9.1,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2024-24790",
+              "severity": "CRITICAL",
+              "resource": "stdlib",
+              "installedVersion": "v1.21.5",
+              "fixedVersion": "1.21.11, 1.22.4",
+              "title": "golang: net/netip: Unexpected behavior from Is methods for IPv4-mapped IPv6 addresses",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2024-24790",
+              "score": 9.8,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2023-39325",
+              "severity": "HIGH",
+              "resource": "golang.org/x/net",
+              "installedVersion": "v0.15.0",
+              "fixedVersion": "0.17.0",
+              "title": "golang: net/http, x/net/http2: rapid stream resets can cause excessive work",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2023-39325",
+              "score": 7.5,
+              "target": ""
+            }
+          ]
+        }
+      },
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "VulnerabilityReport",
+        "metadata": {
+          "name": "replicaset-storefront-6b8f5d9c4-app",
+          "namespace": "shop",
+          "labels": {
+            "trivy-operator.resource.kind": "ReplicaSet",
+            "trivy-operator.resource.name": "storefront-6b8f5d9c4",
+            "trivy-operator.resource.namespace": "shop",
+            "trivy-operator.container.name": "app"
+          },
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "ReplicaSet",
+              "name": "storefront-6b8f5d9c4",
+              "uid": "storefront-6b8f5d9c4-uid",
+              "controller": true,
+              "blockOwnerDeletion": false
+            }
+          ]
+        },
+        "report": {
+          "updateTimestamp": "2026-10-11T08:00:00Z",
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "registry": {
+            "server": "ghcr.io"
+          },
+          "artifact": {
+            "repository": "acme/storefront",
+            "tag": "2.4.0",
+            "digest": "sha256:1f2e3d4c5b6a79880716253443526170f8e9dacbbcadf0e1d2c3b4a5968778695"
+          },
+          "summary": {
+            "criticalCount": 2,
+            "highCount": 1,
+            "mediumCount": 0,
+            "lowCount": 0,
+            "unknownCount": 0,
+            "noneCount": 0
+          },
+          "vulnerabilities": [
+            {
+              "vulnerabilityID": "CVE-2024-45337",
+              "severity": "CRITICAL",
+              "resource": "golang.org/x/crypto",
+              "installedVersion": "v0.14.0",
+              "fixedVersion": "0.31.0",
+              "title": "golang.org/x/crypto/ssh: Misuse of ServerConfig.PublicKeyCallback may cause authorization bypass",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2024-45337",
+              "score": 9.1,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2024-24790",
+              "severity": "CRITICAL",
+              "resource": "stdlib",
+              "installedVersion": "v1.21.3",
+              "fixedVersion": "1.21.11, 1.22.4",
+              "title": "golang: net/netip: Unexpected behavior from Is methods for IPv4-mapped IPv6 addresses",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2024-24790",
+              "score": 9.8,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2023-39325",
+              "severity": "HIGH",
+              "resource": "golang.org/x/net",
+              "installedVersion": "v0.15.0",
+              "fixedVersion": "0.17.0",
+              "title": "golang: net/http, x/net/http2: rapid stream resets can cause excessive work",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2023-39325",
+              "score": 7.5,
+              "target": ""
+            }
+          ]
+        }
+      },
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "VulnerabilityReport",
+        "metadata": {
+          "name": "replicaset-admin-5f7c9d8b6-web",
+          "namespace": "shop",
+          "labels": {
+            "trivy-operator.resource.kind": "ReplicaSet",
+            "trivy-operator.resource.name": "admin-5f7c9d8b6",
+            "trivy-operator.resource.namespace": "shop",
+            "trivy-operator.container.name": "web"
+          },
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "ReplicaSet",
+              "name": "admin-5f7c9d8b6",
+              "uid": "admin-5f7c9d8b6-uid",
+              "controller": true,
+              "blockOwnerDeletion": false
+            }
+          ]
+        },
+        "report": {
+          "updateTimestamp": "2026-10-13T07:00:00Z",
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "registry": {
+            "server": "index.docker.io"
+          },
+          "artifact": {
+            "repository": "library/nginx",
+            "tag": "1.25.3",
+            "digest": "sha256:4c0fdaa8b6341bfdeca5f18f7837462c80cff90527ee35ef185571e1c327beac"
+          },
+          "os": {
+            "family": "debian",
+            "name": "12.4"
+          },
+          "summary": {
+            "criticalCount": 1,
+            "highCount": 3,
+            "mediumCount": 1,
+            "lowCount": 2,
+            "unknownCount": 0,
+            "noneCount": 0
+          },
+          "vulnerabilities": [
+            {
+              "vulnerabilityID": "CVE-2023-45853",
+              "severity": "CRITICAL",
+              "resource": "zlib1g",
+              "installedVersion": "1:1.2.13.dfsg-1",
+              "fixedVersion": "",
+              "title": "zlib: integer overflow and resultant heap-based buffer overflow in zipOpenNewFileInZip4_6",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2023-45853",
+              "score": 9.8,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2024-6387",
+              "severity": "HIGH",
+              "resource": "openssh-client",
+              "installedVersion": "1:9.2p1-2+deb12u1",
+              "fixedVersion": "1:9.2p1-2+deb12u3",
+              "title": "openssh: regreSSHion: race condition in the signal handler of sshd",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2024-6387",
+              "score": 8.1,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2023-44487",
+              "severity": "HIGH",
+              "resource": "libnghttp2-14",
+              "installedVersion": "1.52.0-1",
+              "fixedVersion": "1.52.0-1+deb12u1",
+              "title": "HTTP/2: Multiple HTTP/2 enabled web servers are vulnerable to a DDoS attack (Rapid Reset Attack)",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2023-44487",
+              "score": 7.5,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2024-2961",
+              "severity": "HIGH",
+              "resource": "libc6",
+              "installedVersion": "2.36-9+deb12u4",
+              "fixedVersion": "2.36-9+deb12u7",
+              "title": "glibc: out of bounds write in iconv may lead to remote code execution",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2024-2961",
+              "score": 7.3,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2024-28182",
+              "severity": "MEDIUM",
+              "resource": "libnghttp2-14",
+              "installedVersion": "1.52.0-1",
+              "fixedVersion": "1.52.0-1+deb12u2",
+              "title": "nghttp2: CONTINUATION frames DoS",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2024-28182",
+              "score": 5.3,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2022-0563",
+              "severity": "LOW",
+              "resource": "util-linux",
+              "installedVersion": "2.38.1-5+b1",
+              "fixedVersion": "",
+              "title": "util-linux: partial disclosure of arbitrary files in chfn and chsh when compiled with libreadline",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2022-0563",
+              "score": 5.5,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2011-3374",
+              "severity": "LOW",
+              "resource": "apt",
+              "installedVersion": "2.6.1",
+              "fixedVersion": "",
+              "title": "It was found that apt-key in apt, all versions, do not correctly validate gpg keys with the master keyring, leading to a potential man-in-the-middle attack.",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2011-3374",
+              "score": 3.7,
+              "target": ""
+            }
+          ]
+        }
+      },
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "VulnerabilityReport",
+        "metadata": {
+          "name": "replicaset-checkout-58c4d7f9b-app",
+          "namespace": "shop",
+          "labels": {
+            "trivy-operator.resource.kind": "ReplicaSet",
+            "trivy-operator.resource.name": "checkout-58c4d7f9b",
+            "trivy-operator.resource.namespace": "shop",
+            "trivy-operator.container.name": "app"
+          },
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "ReplicaSet",
+              "name": "checkout-58c4d7f9b",
+              "uid": "checkout-58c4d7f9b-uid",
+              "controller": true,
+              "blockOwnerDeletion": false
+            }
+          ]
+        },
+        "report": {
+          "updateTimestamp": "2026-10-13T08:00:00Z",
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "registry": {
+            "server": "ghcr.io"
+          },
+          "artifact": {
+            "repository": "acme/checkout",
+            "tag": "1.9.0",
+            "digest": "sha256:7e6d5c4b3a29180f7e6d5c4b3a29180f7e6d5c4b3a29180f7e6d5c4b3a29180f"
+          },
+          "summary": {
+            "criticalCount": 0,
+            "highCount": 1,
+            "mediumCount": 0,
+            "lowCount": 0,
+            "unknownCount": 0,
+            "noneCount": 0
+          },
+          "vulnerabilities": [
+            {
+              "vulnerabilityID": "CVE-2023-39325",
+              "severity": "HIGH",
+              "resource": "golang.org/x/net",
+              "installedVersion": "v0.15.0",
+              "fixedVersion": "0.17.0",
+              "title": "golang: net/http, x/net/http2: rapid stream resets can cause excessive work",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2023-39325",
+              "score": 7.5,
+              "target": ""
+            }
+          ]
+        }
+      },
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "VulnerabilityReport",
+        "metadata": {
+          "name": "statefulset-postgres-postgres",
+          "namespace": "shop",
+          "labels": {
+            "trivy-operator.resource.kind": "StatefulSet",
+            "trivy-operator.resource.name": "postgres",
+            "trivy-operator.resource.namespace": "shop",
+            "trivy-operator.container.name": "postgres"
+          },
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "StatefulSet",
+              "name": "postgres",
+              "uid": "postgres-uid",
+              "controller": true,
+              "blockOwnerDeletion": false
+            }
+          ]
+        },
+        "report": {
+          "updateTimestamp": "2026-10-13T06:00:00Z",
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "registry": {
+            "server": "index.docker.io"
+          },
+          "artifact": {
+            "repository": "library/postgres",
+            "tag": "16.1",
+            "digest": "sha256:a2c3e9f0b1d4c5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0"
+          },
+          "os": {
+            "family": "debian",
+            "name": "12.4"
+          },
+          "summary": {
+            "criticalCount": 1,
+            "highCount": 2,
+            "mediumCount": 0,
+            "lowCount": 2,
+            "unknownCount": 0,
+            "noneCount": 0
+          },
+          "vulnerabilities": [
+            {
+              "vulnerabilityID": "CVE-2023-45853",
+              "severity": "CRITICAL",
+              "resource": "zlib1g",
+              "installedVersion": "1:1.2.13.dfsg-1",
+              "fixedVersion": "",
+              "title": "zlib: integer overflow and resultant heap-based buffer overflow in zipOpenNewFileInZip4_6",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2023-45853",
+              "score": 9.8,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2024-6387",
+              "severity": "HIGH",
+              "resource": "openssh-client",
+              "installedVersion": "1:9.2p1-2+deb12u1",
+              "fixedVersion": "1:9.2p1-2+deb12u3",
+              "title": "openssh: regreSSHion: race condition in the signal handler of sshd",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2024-6387",
+              "score": 8.1,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2024-2961",
+              "severity": "HIGH",
+              "resource": "libc6",
+              "installedVersion": "2.36-9+deb12u4",
+              "fixedVersion": "2.36-9+deb12u7",
+              "title": "glibc: out of bounds write in iconv may lead to remote code execution",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2024-2961",
+              "score": 7.3,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2022-0563",
+              "severity": "LOW",
+              "resource": "util-linux",
+              "installedVersion": "2.38.1-5+b1",
+              "fixedVersion": "",
+              "title": "util-linux: partial disclosure of arbitrary files in chfn and chsh when compiled with libreadline",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2022-0563",
+              "score": 5.5,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2011-3374",
+              "severity": "LOW",
+              "resource": "apt",
+              "installedVersion": "2.6.1",
+              "fixedVersion": "",
+              "title": "It was found that apt-key in apt, all versions, do not correctly validate gpg keys with the master keyring, leading to a potential man-in-the-middle attack.",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2011-3374",
+              "score": 3.7,
+              "target": ""
+            }
+          ]
+        }
+      },
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "VulnerabilityReport",
+        "metadata": {
+          "name": "cronjob-nightly-report-report",
+          "namespace": "shop",
+          "labels": {
+            "trivy-operator.resource.kind": "CronJob",
+            "trivy-operator.resource.name": "nightly-report",
+            "trivy-operator.resource.namespace": "shop",
+            "trivy-operator.container.name": "report"
+          },
+          "ownerReferences": [
+            {
+              "apiVersion": "batch/v1",
+              "kind": "CronJob",
+              "name": "nightly-report",
+              "uid": "nightly-report-uid",
+              "controller": true,
+              "blockOwnerDeletion": false
+            }
+          ]
+        },
+        "report": {
+          "updateTimestamp": "2026-10-12T16:00:00Z",
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "registry": {
+            "server": "ghcr.io"
+          },
+          "artifact": {
+            "repository": "acme/reports",
+            "tag": "0.3.2",
+            "digest": "sha256:5b4a39281706f5e4d3c2b1a09f8e7d6c5b4a39281706f5e4d3c2b1a09f8e7d6c"
+          },
+          "summary": {
+            "criticalCount": 0,
+            "highCount": 0,
+            "mediumCount": 0,
+            "lowCount": 0,
+            "unknownCount": 0,
+            "noneCount": 0
+          },
+          "vulnerabilities": []
+        }
+      },
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "VulnerabilityReport",
+        "metadata": {
+          "name": "daemonset-node-exporter-node-exporter",
+          "namespace": "monitoring",
+          "labels": {
+            "trivy-operator.resource.kind": "DaemonSet",
+            "trivy-operator.resource.name": "node-exporter",
+            "trivy-operator.resource.namespace": "monitoring",
+            "trivy-operator.container.name": "node-exporter"
+          },
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "DaemonSet",
+              "name": "node-exporter",
+              "uid": "node-exporter-uid",
+              "controller": true,
+              "blockOwnerDeletion": false
+            }
+          ]
+        },
+        "report": {
+          "updateTimestamp": "2026-10-13T04:00:00Z",
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "registry": {
+            "server": "quay.io"
+          },
+          "artifact": {
+            "repository": "prometheus/node-exporter",
+            "tag": "v1.7.0",
+            "digest": "sha256:4cb2b9019f1757be8482419002cb7afe028fdba35d47958829e4cfeaf6246d80"
+          },
+          "summary": {
+            "criticalCount": 1,
+            "highCount": 0,
+            "mediumCount": 1,
+            "lowCount": 0,
+            "unknownCount": 0,
+            "noneCount": 0
+          },
+          "vulnerabilities": [
+            {
+              "vulnerabilityID": "CVE-2024-24790",
+              "severity": "CRITICAL",
+              "resource": "stdlib",
+              "installedVersion": "v1.21.5",
+              "fixedVersion": "1.21.11, 1.22.4",
+              "title": "golang: net/netip: Unexpected behavior from Is methods for IPv4-mapped IPv6 addresses",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2024-24790",
+              "score": 9.8,
+              "target": ""
+            },
+            {
+              "vulnerabilityID": "CVE-2023-45288",
+              "severity": "MEDIUM",
+              "resource": "golang.org/x/net",
+              "installedVersion": "v0.19.0",
+              "fixedVersion": "0.23.0",
+              "title": "golang: net/http, x/net/http2: unlimited number of CONTINUATION frames causes DoS",
+              "primaryLink": "https://avd.aquasec.com/nvd/cve-2023-45288",
+              "score": 5.3,
+              "target": ""
+            }
+          ]
+        }
+      }
+    ],
+    "aquasecurity.github.io/ConfigAuditReport": [
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "ConfigAuditReport",
+        "metadata": {
+          "name": "replicaset-storefront-7d9f8c6b5",
+          "namespace": "shop",
+          "labels": {
+            "trivy-operator.resource.kind": "ReplicaSet",
+            "trivy-operator.resource.name": "storefront-7d9f8c6b5",
+            "trivy-operator.resource.namespace": "shop"
+          }
+        },
+        "report": {
+          "updateTimestamp": "2026-10-13T09:00:00Z",
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "summary": {
+            "criticalCount": 0,
+            "highCount": 1,
+            "mediumCount": 1,
+            "lowCount": 1
+          },
+          "checks": [
+            {
+              "checkID": "KSV014",
+              "severity": "HIGH",
+              "title": "Root file system is not read-only",
+              "category": "Kubernetes Security Check",
+              "description": "An immutable root file system prevents applications from writing to their local disk.",
+              "remediation": "Change 'containers[].securityContext.readOnlyRootFilesystem' to 'true'.",
+              "messages": [
+                "Container 'web' of ReplicaSet 'storefront-7d9f8c6b5' should set 'securityContext.readOnlyRootFilesystem' to true"
+              ],
+              "success": false
+            },
+            {
+              "checkID": "KSV012",
+              "severity": "MEDIUM",
+              "title": "Runs as root user",
+              "category": "Kubernetes Security Check",
+              "description": "Force the running image to run as a non-root user to ensure least privileges.",
+              "remediation": "Set 'containers[].securityContext.runAsNonRoot' to true.",
+              "messages": [
+                "Container 'web' of ReplicaSet 'storefront-7d9f8c6b5' should set 'securityContext.runAsNonRoot' to true"
+              ],
+              "success": false
+            },
+            {
+              "checkID": "KSV011",
+              "severity": "LOW",
+              "title": "CPU not limited",
+              "category": "Kubernetes Security Check",
+              "description": "Enforcing CPU limits prevents DoS via resource exhaustion.",
+              "remediation": "Set a limit value under 'containers[].resources.limits.cpu'.",
+              "messages": [
+                "Container 'web' of ReplicaSet 'storefront-7d9f8c6b5' should set 'resources.limits.cpu'"
+              ],
+              "success": false
+            }
+          ]
+        }
+      },
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "ConfigAuditReport",
+        "metadata": {
+          "name": "replicaset-checkout-58c4d7f9b",
+          "namespace": "shop",
+          "labels": {
+            "trivy-operator.resource.kind": "ReplicaSet",
+            "trivy-operator.resource.name": "checkout-58c4d7f9b",
+            "trivy-operator.resource.namespace": "shop"
+          }
+        },
+        "report": {
+          "updateTimestamp": "2026-10-13T08:00:00Z",
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "summary": {
+            "criticalCount": 0,
+            "highCount": 0,
+            "mediumCount": 1,
+            "lowCount": 0
+          },
+          "checks": [
+            {
+              "checkID": "KSV012",
+              "severity": "MEDIUM",
+              "title": "Runs as root user",
+              "category": "Kubernetes Security Check",
+              "description": "Force the running image to run as a non-root user to ensure least privileges.",
+              "remediation": "Set 'containers[].securityContext.runAsNonRoot' to true.",
+              "messages": [
+                "Container 'app' of ReplicaSet 'checkout-58c4d7f9b' should set 'securityContext.runAsNonRoot' to true"
+              ],
+              "success": false
+            }
+          ]
+        }
+      },
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "ConfigAuditReport",
+        "metadata": {
+          "name": "daemonset-node-exporter",
+          "namespace": "monitoring",
+          "labels": {
+            "trivy-operator.resource.kind": "DaemonSet",
+            "trivy-operator.resource.name": "node-exporter",
+            "trivy-operator.resource.namespace": "monitoring"
+          }
+        },
+        "report": {
+          "updateTimestamp": "2026-10-13T04:00:00Z",
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "summary": {
+            "criticalCount": 0,
+            "highCount": 2,
+            "mediumCount": 0,
+            "lowCount": 0
+          },
+          "checks": [
+            {
+              "checkID": "KSV009",
+              "severity": "HIGH",
+              "title": "Access to host network",
+              "category": "Kubernetes Security Check",
+              "description": "Sharing the host’s network namespace permits processes in the pod to communicate with processes bound to the host’s loopback adapter.",
+              "remediation": "Do not set 'spec.template.spec.hostNetwork' to true.",
+              "messages": [
+                "DaemonSet 'node-exporter' should not set 'spec.template.spec.hostNetwork' to true"
+              ],
+              "success": false
+            },
+            {
+              "checkID": "KSV010",
+              "severity": "HIGH",
+              "title": "Access to host PID",
+              "category": "Kubernetes Security Check",
+              "description": "Sharing the host’s PID namespace allows visibility on host processes, potentially leaking information such as environment variables and configuration.",
+              "remediation": "Do not set 'spec.template.spec.hostPID' to true.",
+              "messages": [
+                "DaemonSet 'node-exporter' should not set 'spec.template.spec.hostPID' to true"
+              ],
+              "success": false
+            }
+          ]
+        }
+      },
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "ConfigAuditReport",
+        "metadata": {
+          "name": "statefulset-postgres",
+          "namespace": "shop",
+          "labels": {
+            "trivy-operator.resource.kind": "StatefulSet",
+            "trivy-operator.resource.name": "postgres",
+            "trivy-operator.resource.namespace": "shop"
+          }
+        },
+        "report": {
+          "updateTimestamp": "2026-10-13T06:00:00Z",
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "summary": {
+            "criticalCount": 0,
+            "highCount": 0,
+            "mediumCount": 0,
+            "lowCount": 0
+          },
+          "checks": []
+        }
+      }
+    ],
+    "aquasecurity.github.io/ExposedSecretReport": [
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "ExposedSecretReport",
+        "metadata": {
+          "name": "replicaset-checkout-58c4d7f9b-app",
+          "namespace": "shop",
+          "labels": {
+            "trivy-operator.resource.kind": "ReplicaSet",
+            "trivy-operator.resource.name": "checkout-58c4d7f9b",
+            "trivy-operator.resource.namespace": "shop",
+            "trivy-operator.container.name": "app"
+          }
+        },
+        "report": {
+          "updateTimestamp": "2026-10-13T08:00:00Z",
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "registry": {
+            "server": "ghcr.io"
+          },
+          "artifact": {
+            "repository": "acme/checkout",
+            "tag": "1.9.0",
+            "digest": "sha256:7e6d5c4b3a29180f7e6d5c4b3a29180f7e6d5c4b3a29180f7e6d5c4b3a29180f"
+          },
+          "summary": {
+            "criticalCount": 1,
+            "highCount": 0,
+            "mediumCount": 0,
+            "lowCount": 0
+          },
+          "secrets": [
+            {
+              "ruleID": "aws-access-key-id",
+              "category": "AWS",
+              "title": "AWS Access Key ID",
+              "severity": "CRITICAL",
+              "target": "/app/config/settings.yaml",
+              "match": "aws_access_key_id: ********************"
+            }
+          ]
+        }
+      }
+    ],
+    "aquasecurity.github.io/RbacAssessmentReport": [
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "RbacAssessmentReport",
+        "metadata": {
+          "name": "role-storefront-config",
+          "namespace": "shop",
+          "labels": {
+            "trivy-operator.resource.kind": "Role",
+            "trivy-operator.resource.name": "storefront-config",
+            "trivy-operator.resource.namespace": "shop"
+          }
+        },
+        "report": {
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "summary": {
+            "criticalCount": 1,
+            "highCount": 0,
+            "mediumCount": 0,
+            "lowCount": 0
+          },
+          "checks": [
+            {
+              "checkID": "KSV041",
+              "severity": "CRITICAL",
+              "title": "Manage secrets",
+              "category": "Kubernetes Security Check",
+              "description": "Check whether role permits managing secrets",
+              "remediation": "Create a role which does not permit to manage secrets if not needed",
+              "messages": [
+                "Role permits management of secret(s)"
+              ],
+              "success": false
+            }
+          ]
+        }
+      }
+    ],
+    "aquasecurity.github.io/ClusterRbacAssessmentReport": [
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "ClusterRbacAssessmentReport",
+        "metadata": {
+          "name": "clusterrole-ci-deployer",
+          "labels": {
+            "trivy-operator.resource.kind": "ClusterRole",
+            "trivy-operator.resource.name": "ci-deployer"
+          }
+        },
+        "report": {
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "summary": {
+            "criticalCount": 2,
+            "highCount": 0,
+            "mediumCount": 0,
+            "lowCount": 0
+          },
+          "checks": [
+            {
+              "checkID": "KSV044",
+              "severity": "CRITICAL",
+              "title": "No wildcard verb and resource roles",
+              "category": "Kubernetes Security Check",
+              "description": "Check whether role permits wildcard verb on wildcard resource",
+              "remediation": "Create a role which does not permit wildcard verb on wildcard resource",
+              "messages": [
+                "Role permits wildcard verb on wildcard resource"
+              ],
+              "success": false
+            },
+            {
+              "checkID": "KSV045",
+              "severity": "CRITICAL",
+              "title": "No wildcard verb roles",
+              "category": "Kubernetes Security Check",
+              "description": "Check whether role permits wildcard verb on specific resources",
+              "remediation": "Create a role which does not permit wildcard verb on specific resources",
+              "messages": [
+                "Role permits wildcard verb on specific resources"
+              ],
+              "success": false
+            }
+          ]
+        }
+      },
+      {
+        "apiVersion": "aquasecurity.github.io/v1alpha1",
+        "kind": "ClusterRbacAssessmentReport",
+        "metadata": {
+          "name": "clusterrole-view-pods",
+          "labels": {
+            "trivy-operator.resource.kind": "ClusterRole",
+            "trivy-operator.resource.name": "view-pods"
+          }
+        },
+        "report": {
+          "scanner": {
+            "name": "Trivy",
+            "vendor": "Aqua Security",
+            "version": "0.58.2"
+          },
+          "summary": {
+            "criticalCount": 0,
+            "highCount": 0,
+            "mediumCount": 0,
+            "lowCount": 0
+          },
+          "checks": []
+        }
+      }
+    ],
+    "apps/ReplicaSet": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "metadata": {
+          "name": "storefront-7d9f8c6b5",
+          "namespace": "shop",
+          "creationTimestamp": "2026-10-11T08:00:00Z",
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "Deployment",
+              "name": "storefront",
+              "uid": "storefront-uid",
+              "controller": true,
+              "blockOwnerDeletion": true
+            }
+          ]
+        },
+        "spec": {
+          "replicas": 3
+        },
+        "status": {
+          "replicas": 3,
+          "readyReplicas": 3,
+          "availableReplicas": 3
+        }
+      },
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "metadata": {
+          "name": "storefront-6b8f5d9c4",
+          "namespace": "shop",
+          "creationTimestamp": "2026-10-02T08:00:00Z",
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "Deployment",
+              "name": "storefront",
+              "uid": "storefront-uid",
+              "controller": true,
+              "blockOwnerDeletion": true
+            }
+          ]
+        },
+        "spec": {
+          "replicas": 0
+        },
+        "status": {
+          "replicas": 0,
+          "readyReplicas": 0,
+          "availableReplicas": 0
+        }
+      },
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "metadata": {
+          "name": "admin-5f7c9d8b6",
+          "namespace": "shop",
+          "creationTimestamp": "2026-09-20T08:00:00Z",
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "Deployment",
+              "name": "admin",
+              "uid": "admin-uid",
+              "controller": true,
+              "blockOwnerDeletion": true
+            }
+          ]
+        },
+        "spec": {
+          "replicas": 1
+        },
+        "status": {
+          "replicas": 1,
+          "readyReplicas": 1,
+          "availableReplicas": 1
+        }
+      },
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "metadata": {
+          "name": "checkout-58c4d7f9b",
+          "namespace": "shop",
+          "creationTimestamp": "2026-10-09T08:00:00Z",
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "Deployment",
+              "name": "checkout",
+              "uid": "checkout-uid",
+              "controller": true,
+              "blockOwnerDeletion": true
+            }
+          ]
+        },
+        "spec": {
+          "replicas": 2
+        },
+        "status": {
+          "replicas": 2,
+          "readyReplicas": 2,
+          "availableReplicas": 2
+        }
+      }
+    ]
+  }
+}

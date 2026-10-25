@@ -4,7 +4,7 @@ kind: Plugin
 metadata:
   name: trivy-operator
 spec:
-  version: 1.1.0
+  version: 1.2.0
   needs:
     lumovi: 1.23.0
   groups:
@@ -18,6 +18,40 @@ spec:
     - { group: aquasecurity.github.io, kind: RbacAssessmentReport }
     - { group: aquasecurity.github.io, kind: ClusterRbacAssessmentReport }
     - { group: aquasecurity.github.io, kind: ClusterComplianceReport }
+  # Its Security page (src/trivy-operator): what to fix first, then everything else Trivy found;
+  # and a tab on a VulnerabilityReport, every vulnerability in its image. Drawn from its own
+  # reports, read field by field, never what a view withholds. Nothing is scanned, fixed or looked
+  # up anywhere.
+  pages:
+    - { id: security, title: Security }
+  tabs:
+    - id: vulnerabilities
+      title: Vulnerabilities
+      kinds: [{ group: aquasecurity.github.io, kind: VulnerabilityReport }]
+  # Of Kubernetes' own, ReplicaSets: whose each is and whether it runs pods, never what they run.
+  # Trivy scans a Deployment's ReplicaSet, so a ReplicaSet's report is said as its Deployment's.
+  reads:
+    - group: apps
+      kind: ReplicaSet
+      fields:
+        [
+          metadata.name,
+          metadata.namespace,
+          metadata.creationTimestamp,
+          metadata.ownerReferences,
+          spec.replicas,
+          status.replicas,
+        ]
+  # Lumovi's own lists a workload's row on the page goes to, at that one object: never read, never
+  # changed (src/trivy-operator/pages.ts's OPENS, the same kinds).
+  opens:
+    - { group: apps, kind: Deployment }
+    - { group: apps, kind: StatefulSet }
+    - { group: apps, kind: DaemonSet }
+    - { group: apps, kind: ReplicaSet }
+    - { group: batch, kind: CronJob }
+    - { group: batch, kind: Job }
+    - { group: "", kind: Pod }
   views:
     # A report for each container image a workload runs.
     - name: trivy-vulnerability-reports

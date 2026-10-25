@@ -1,0 +1,1402 @@
+[
+  {
+    "part": "Stack",
+    "props": {},
+    "children": [
+      {
+        "part": "Tiles",
+        "props": {
+          "tiles": [
+            {
+              "key": "critical",
+              "icon": "flame",
+              "label": "Critical",
+              "value": {
+                "kind": "figure",
+                "text": "6"
+              },
+              "level": "critical",
+              "detail": "3 fixable · in 4 workloads",
+              "opens": {
+                "page": "security",
+                "filters": {
+                  "severity": [
+                    "Critical"
+                  ]
+                }
+              }
+            },
+            {
+              "key": "high",
+              "icon": "bell",
+              "label": "High",
+              "value": {
+                "kind": "figure",
+                "text": "10"
+              },
+              "level": "warning",
+              "detail": "10 fixable · in 4 workloads",
+              "opens": {
+                "page": "security",
+                "filters": {
+                  "severity": [
+                    "High"
+                  ]
+                }
+              }
+            },
+            {
+              "key": "secrets",
+              "icon": "key-round",
+              "label": "Exposed secrets",
+              "value": {
+                "kind": "figure",
+                "text": "1"
+              },
+              "level": "critical",
+              "detail": "in 1 image"
+            },
+            {
+              "key": "misconfigured",
+              "icon": "server-cog",
+              "label": "Misconfigured",
+              "value": {
+                "kind": "figure",
+                "text": "3"
+              },
+              "level": "warning",
+              "detail": "of 4 resources · 3 high"
+            }
+          ]
+        },
+        "children": []
+      },
+      {
+        "part": "Card",
+        "props": {
+          "title": "Vulnerabilities by workload",
+          "note": "6",
+          "about": "Each workload’s images as Trivy last scanned them. Fixable ones first: those with a fixed version, critical before high."
+        },
+        "children": [
+          {
+            "part": "Table",
+            "props": {
+              "title": "Vulnerabilities by workload",
+              "leadHeading": "Workload",
+              "headings": true,
+              "nameSorts": true,
+              "search": true,
+              "filters": [
+                {
+                  "key": "severity",
+                  "name": "Severity"
+                },
+                {
+                  "key": "fixable",
+                  "name": "Fixable"
+                },
+                {
+                  "key": "namespace",
+                  "name": "Namespace"
+                },
+                {
+                  "key": "kind",
+                  "name": "Kind"
+                },
+                {
+                  "key": "package",
+                  "name": "Package",
+                  "more": true
+                }
+              ],
+              "columns": [
+                {
+                  "name": "Critical",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "High",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "Medium",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "Low",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "Fixable",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "Fix first",
+                  "kind": "text",
+                  "width": "wide"
+                },
+                {
+                  "name": "Scanned",
+                  "kind": "age",
+                  "width": "text"
+                }
+              ],
+              "rows": [
+                {
+                  "key": "Deployment/shop/storefront",
+                  "lead": {
+                    "level": "critical",
+                    "name": "storefront",
+                    "beside": "shop",
+                    "under": "Deployment · 2 images"
+                  },
+                  "facets": [
+                    {
+                      "filter": "severity",
+                      "value": "Critical"
+                    },
+                    {
+                      "filter": "severity",
+                      "value": "High"
+                    },
+                    {
+                      "filter": "severity",
+                      "value": "Medium"
+                    },
+                    {
+                      "filter": "severity",
+                      "value": "Low"
+                    },
+                    {
+                      "filter": "fixable",
+                      "value": "Yes"
+                    },
+                    {
+                      "filter": "namespace",
+                      "value": "shop"
+                    },
+                    {
+                      "filter": "kind",
+                      "value": "Deployment"
+                    },
+                    {
+                      "filter": "package",
+                      "value": "golang.org/x/crypto"
+                    },
+                    {
+                      "filter": "package",
+                      "value": "golang.org/x/net"
+                    },
+                    {
+                      "filter": "package",
+                      "value": "libc6"
+                    },
+                    {
+                      "filter": "package",
+                      "value": "libnghttp2-14"
+                    },
+                    {
+                      "filter": "package",
+                      "value": "openssh-client"
+                    },
+                    {
+                      "filter": "package",
+                      "value": "stdlib"
+                    }
+                  ],
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 3
+                    },
+                    {
+                      "kind": "number",
+                      "value": 4
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 2
+                    },
+                    {
+                      "kind": "number",
+                      "value": 6,
+                      "text": "6 of 7"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "stdlib → 1.21.11, 1.22.4 · CVE-2024-24790"
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-13T09:00:00Z"
+                    }
+                  ],
+                  "goes": {
+                    "list": "apps/Deployment",
+                    "name": "storefront",
+                    "namespace": "shop"
+                  }
+                },
+                {
+                  "key": "DaemonSet/monitoring/node-exporter",
+                  "lead": {
+                    "level": "critical",
+                    "name": "node-exporter",
+                    "beside": "monitoring",
+                    "under": "DaemonSet · 1 image"
+                  },
+                  "facets": [
+                    {
+                      "filter": "severity",
+                      "value": "Critical"
+                    },
+                    {
+                      "filter": "severity",
+                      "value": "Medium"
+                    },
+                    {
+                      "filter": "fixable",
+                      "value": "Yes"
+                    },
+                    {
+                      "filter": "namespace",
+                      "value": "monitoring"
+                    },
+                    {
+                      "filter": "kind",
+                      "value": "DaemonSet"
+                    },
+                    {
+                      "filter": "package",
+                      "value": "stdlib"
+                    }
+                  ],
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1,
+                      "text": "1 of 1"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "stdlib → 1.21.11, 1.22.4 · CVE-2024-24790"
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-13T04:00:00Z"
+                    }
+                  ],
+                  "goes": {
+                    "list": "apps/DaemonSet",
+                    "name": "node-exporter",
+                    "namespace": "monitoring"
+                  }
+                },
+                {
+                  "key": "Deployment/shop/admin",
+                  "lead": {
+                    "level": "critical",
+                    "name": "admin",
+                    "beside": "shop",
+                    "under": "Deployment · 1 image"
+                  },
+                  "facets": [
+                    {
+                      "filter": "severity",
+                      "value": "Critical"
+                    },
+                    {
+                      "filter": "severity",
+                      "value": "High"
+                    },
+                    {
+                      "filter": "severity",
+                      "value": "Medium"
+                    },
+                    {
+                      "filter": "severity",
+                      "value": "Low"
+                    },
+                    {
+                      "filter": "fixable",
+                      "value": "Yes"
+                    },
+                    {
+                      "filter": "namespace",
+                      "value": "shop"
+                    },
+                    {
+                      "filter": "kind",
+                      "value": "Deployment"
+                    },
+                    {
+                      "filter": "package",
+                      "value": "libc6"
+                    },
+                    {
+                      "filter": "package",
+                      "value": "libnghttp2-14"
+                    },
+                    {
+                      "filter": "package",
+                      "value": "openssh-client"
+                    }
+                  ],
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 3
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 2
+                    },
+                    {
+                      "kind": "number",
+                      "value": 3,
+                      "text": "3 of 4"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "openssh-client → 1:9.2p1-2+deb12u3 · CVE-2024-6387"
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-13T07:00:00Z"
+                    }
+                  ],
+                  "goes": {
+                    "list": "apps/Deployment",
+                    "name": "admin",
+                    "namespace": "shop"
+                  }
+                },
+                {
+                  "key": "StatefulSet/shop/postgres",
+                  "lead": {
+                    "level": "critical",
+                    "name": "postgres",
+                    "beside": "shop",
+                    "under": "StatefulSet · 1 image"
+                  },
+                  "facets": [
+                    {
+                      "filter": "severity",
+                      "value": "Critical"
+                    },
+                    {
+                      "filter": "severity",
+                      "value": "High"
+                    },
+                    {
+                      "filter": "severity",
+                      "value": "Low"
+                    },
+                    {
+                      "filter": "fixable",
+                      "value": "Yes"
+                    },
+                    {
+                      "filter": "namespace",
+                      "value": "shop"
+                    },
+                    {
+                      "filter": "kind",
+                      "value": "StatefulSet"
+                    },
+                    {
+                      "filter": "package",
+                      "value": "libc6"
+                    },
+                    {
+                      "filter": "package",
+                      "value": "openssh-client"
+                    }
+                  ],
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 2
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 2
+                    },
+                    {
+                      "kind": "number",
+                      "value": 2,
+                      "text": "2 of 3"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "openssh-client → 1:9.2p1-2+deb12u3 · CVE-2024-6387"
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-13T06:00:00Z"
+                    }
+                  ],
+                  "goes": {
+                    "list": "apps/StatefulSet",
+                    "name": "postgres",
+                    "namespace": "shop"
+                  }
+                },
+                {
+                  "key": "Deployment/shop/checkout",
+                  "lead": {
+                    "level": "warning",
+                    "name": "checkout",
+                    "beside": "shop",
+                    "under": "Deployment · 1 image"
+                  },
+                  "facets": [
+                    {
+                      "filter": "severity",
+                      "value": "High"
+                    },
+                    {
+                      "filter": "fixable",
+                      "value": "Yes"
+                    },
+                    {
+                      "filter": "namespace",
+                      "value": "shop"
+                    },
+                    {
+                      "filter": "kind",
+                      "value": "Deployment"
+                    },
+                    {
+                      "filter": "package",
+                      "value": "golang.org/x/net"
+                    }
+                  ],
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1,
+                      "text": "1 of 1"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "golang.org/x/net → 0.17.0 · CVE-2023-39325"
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-13T08:00:00Z"
+                    }
+                  ],
+                  "goes": {
+                    "list": "apps/Deployment",
+                    "name": "checkout",
+                    "namespace": "shop"
+                  }
+                },
+                {
+                  "key": "CronJob/shop/nightly-report",
+                  "lead": {
+                    "name": "nightly-report",
+                    "beside": "shop",
+                    "under": "CronJob · 1 image"
+                  },
+                  "facets": [
+                    {
+                      "filter": "fixable",
+                      "value": "No"
+                    },
+                    {
+                      "filter": "namespace",
+                      "value": "shop"
+                    },
+                    {
+                      "filter": "kind",
+                      "value": "CronJob"
+                    }
+                  ],
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "none"
+                    },
+                    {
+                      "kind": "none"
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-12T16:00:00Z"
+                    }
+                  ],
+                  "goes": {
+                    "list": "batch/CronJob",
+                    "name": "nightly-report",
+                    "namespace": "shop"
+                  }
+                }
+              ],
+              "shows": 8
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "part": "Card",
+        "props": {
+          "title": "Vulnerabilities by image",
+          "note": "6",
+          "about": "Each image once, however many workloads run it."
+        },
+        "children": [
+          {
+            "part": "Table",
+            "props": {
+              "title": "Vulnerabilities by image",
+              "leadHeading": "Image",
+              "headings": true,
+              "nameSorts": true,
+              "columns": [
+                {
+                  "name": "Critical",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "High",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "Medium",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "Low",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "Fixable",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "Fix first",
+                  "kind": "text",
+                  "width": "wide"
+                },
+                {
+                  "name": "OS",
+                  "kind": "text",
+                  "width": "text"
+                }
+              ],
+              "rows": [
+                {
+                  "key": "ghcr.io/acme/storefront:2.4.1",
+                  "lead": {
+                    "level": "critical",
+                    "name": "ghcr.io/acme/storefront:2.4.1",
+                    "under": "Used by storefront · shop"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 2
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 3,
+                      "text": "3 of 3"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "stdlib → 1.21.11, 1.22.4 · CVE-2024-24790"
+                    },
+                    {
+                      "kind": "none"
+                    }
+                  ],
+                  "opens": "t2"
+                },
+                {
+                  "key": "quay.io/prometheus/node-exporter:v1.7.0",
+                  "lead": {
+                    "level": "critical",
+                    "name": "quay.io/prometheus/node-exporter:v1.7.0",
+                    "under": "Used by node-exporter · monitoring"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1,
+                      "text": "1 of 1"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "stdlib → 1.21.11, 1.22.4 · CVE-2024-24790"
+                    },
+                    {
+                      "kind": "none"
+                    }
+                  ],
+                  "opens": "t8"
+                },
+                {
+                  "key": "docker.io/library/nginx:1.25.3",
+                  "lead": {
+                    "level": "critical",
+                    "name": "docker.io/library/nginx:1.25.3",
+                    "under": "Used by admin · shop, and 1 more"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 3
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 2
+                    },
+                    {
+                      "kind": "number",
+                      "value": 3,
+                      "text": "3 of 4"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "openssh-client → 1:9.2p1-2+deb12u3 · CVE-2024-6387"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "debian 12.4"
+                    }
+                  ],
+                  "opens": "t1"
+                },
+                {
+                  "key": "docker.io/library/postgres:16.1",
+                  "lead": {
+                    "level": "critical",
+                    "name": "docker.io/library/postgres:16.1",
+                    "under": "Used by postgres · shop"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 2
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 2
+                    },
+                    {
+                      "kind": "number",
+                      "value": 2,
+                      "text": "2 of 3"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "openssh-client → 1:9.2p1-2+deb12u3 · CVE-2024-6387"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "debian 12.4"
+                    }
+                  ],
+                  "opens": "t6"
+                },
+                {
+                  "key": "ghcr.io/acme/checkout:1.9.0",
+                  "lead": {
+                    "level": "warning",
+                    "name": "ghcr.io/acme/checkout:1.9.0",
+                    "under": "Used by checkout · shop"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1,
+                      "text": "1 of 1"
+                    },
+                    {
+                      "kind": "text",
+                      "text": "golang.org/x/net → 0.17.0 · CVE-2023-39325"
+                    },
+                    {
+                      "kind": "none"
+                    }
+                  ],
+                  "opens": "t5"
+                },
+                {
+                  "key": "ghcr.io/acme/reports:0.3.2",
+                  "lead": {
+                    "name": "ghcr.io/acme/reports:0.3.2",
+                    "under": "Used by nightly-report · shop"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "none"
+                    },
+                    {
+                      "kind": "none"
+                    },
+                    {
+                      "kind": "none"
+                    }
+                  ],
+                  "opens": "t7"
+                }
+              ],
+              "shows": 4
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "part": "Pair",
+        "props": {
+          "first": "even"
+        },
+        "children": [
+          {
+            "part": "Card",
+            "props": {
+              "title": "Critical and high, by namespace"
+            },
+            "children": [
+              {
+                "part": "Counts",
+                "props": {
+                  "groups": [
+                    {
+                      "title": "Namespaces",
+                      "code": true,
+                      "rows": [
+                        {
+                          "value": "shop",
+                          "count": 15,
+                          "opens": {
+                            "page": "security",
+                            "filters": {
+                              "namespace": [
+                                "shop"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "value": "monitoring",
+                          "count": 1,
+                          "opens": {
+                            "page": "security",
+                            "filters": {
+                              "namespace": [
+                                "monitoring"
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "part": "Card",
+            "props": {
+              "title": "Fixable, by package"
+            },
+            "children": [
+              {
+                "part": "Counts",
+                "props": {
+                  "groups": [
+                    {
+                      "title": "Packages",
+                      "code": true,
+                      "rows": [
+                        {
+                          "value": "libc6",
+                          "count": 3,
+                          "opens": {
+                            "page": "security",
+                            "filters": {
+                              "package": [
+                                "libc6"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "value": "openssh-client",
+                          "count": 3,
+                          "opens": {
+                            "page": "security",
+                            "filters": {
+                              "package": [
+                                "openssh-client"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "value": "golang.org/x/net",
+                          "count": 2,
+                          "opens": {
+                            "page": "security",
+                            "filters": {
+                              "package": [
+                                "golang.org/x/net"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "value": "libnghttp2-14",
+                          "count": 2,
+                          "opens": {
+                            "page": "security",
+                            "filters": {
+                              "package": [
+                                "libnghttp2-14"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "value": "stdlib",
+                          "count": 2,
+                          "opens": {
+                            "page": "security",
+                            "filters": {
+                              "package": [
+                                "stdlib"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "value": "golang.org/x/crypto",
+                          "count": 1,
+                          "opens": {
+                            "page": "security",
+                            "filters": {
+                              "package": [
+                                "golang.org/x/crypto"
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "part": "Card",
+        "props": {
+          "title": "Exposed secrets",
+          "note": "1",
+          "about": "Where Trivy found each one, and what kind it is. The text that matched isn’t shown: Lumovi drops it before this page sees it."
+        },
+        "children": [
+          {
+            "part": "Table",
+            "props": {
+              "title": "Exposed secrets",
+              "leadHeading": "Where",
+              "headings": true,
+              "columns": [
+                {
+                  "name": "File",
+                  "kind": "text"
+                },
+                {
+                  "name": "What",
+                  "kind": "text"
+                },
+                {
+                  "name": "Severity",
+                  "kind": "status",
+                  "sorts": true
+                }
+              ],
+              "rows": [
+                {
+                  "key": "t9/aws-access-key-id//app/config/settings.yaml",
+                  "lead": {
+                    "level": "critical",
+                    "name": "checkout",
+                    "beside": "shop",
+                    "under": "app · ghcr.io/acme/checkout:1.9.0"
+                  },
+                  "cells": [
+                    {
+                      "kind": "text",
+                      "text": "/app/config/settings.yaml",
+                      "mono": true
+                    },
+                    {
+                      "kind": "text",
+                      "text": "AWS Access Key ID"
+                    },
+                    {
+                      "kind": "status",
+                      "level": "critical",
+                      "word": "Critical"
+                    }
+                  ],
+                  "opens": "t9"
+                }
+              ],
+              "shows": 6
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "part": "Card",
+        "props": {
+          "title": "Misconfigurations",
+          "note": "3 of 4 resources",
+          "about": "Checks that failed on each resource’s settings, by severity."
+        },
+        "children": [
+          {
+            "part": "Table",
+            "props": {
+              "title": "Misconfigurations",
+              "leadHeading": "Resource",
+              "headings": true,
+              "nameSorts": true,
+              "columns": [
+                {
+                  "name": "Critical",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "High",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "Medium",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "Low",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "Worst check",
+                  "kind": "text",
+                  "width": "wide"
+                },
+                {
+                  "name": "Scanned",
+                  "kind": "age",
+                  "width": "text"
+                }
+              ],
+              "rows": [
+                {
+                  "key": "t12",
+                  "lead": {
+                    "level": "warning",
+                    "name": "node-exporter",
+                    "beside": "monitoring",
+                    "under": "DaemonSet"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 2
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "text",
+                      "text": "KSV009 Access to host network"
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-13T04:00:00Z"
+                    }
+                  ],
+                  "opens": "t12"
+                },
+                {
+                  "key": "t10",
+                  "lead": {
+                    "level": "warning",
+                    "name": "storefront",
+                    "beside": "shop",
+                    "under": "Deployment"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "text",
+                      "text": "KSV014 Root file system is not read-only"
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-13T09:00:00Z"
+                    }
+                  ],
+                  "opens": "t10"
+                },
+                {
+                  "key": "t11",
+                  "lead": {
+                    "level": "neutral",
+                    "name": "checkout",
+                    "beside": "shop",
+                    "under": "Deployment"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "text",
+                      "text": "KSV012 Runs as root user"
+                    },
+                    {
+                      "kind": "age",
+                      "time": "2026-10-13T08:00:00Z"
+                    }
+                  ],
+                  "opens": "t11"
+                }
+              ],
+              "shows": 5
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "part": "Card",
+        "props": {
+          "title": "RBAC",
+          "note": "2 of 3 roles",
+          "about": "Roles and cluster roles whose permissions Trivy flags, by severity."
+        },
+        "children": [
+          {
+            "part": "Table",
+            "props": {
+              "title": "RBAC",
+              "leadHeading": "Role",
+              "headings": true,
+              "nameSorts": true,
+              "columns": [
+                {
+                  "name": "Critical",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "High",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "Medium",
+                  "kind": "number",
+                  "width": "narrow",
+                  "sorts": true
+                },
+                {
+                  "name": "Worst check",
+                  "kind": "text",
+                  "width": "wide"
+                }
+              ],
+              "rows": [
+                {
+                  "key": "t15",
+                  "lead": {
+                    "level": "critical",
+                    "name": "ci-deployer",
+                    "beside": "cluster-wide",
+                    "under": "ClusterRole"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 2
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "text",
+                      "text": "KSV044 No wildcard verb and resource roles"
+                    }
+                  ],
+                  "opens": "t15"
+                },
+                {
+                  "key": "t14",
+                  "lead": {
+                    "level": "critical",
+                    "name": "storefront-config",
+                    "beside": "shop",
+                    "under": "Role"
+                  },
+                  "cells": [
+                    {
+                      "kind": "number",
+                      "value": 1
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "number",
+                      "value": 0
+                    },
+                    {
+                      "kind": "text",
+                      "text": "KSV041 Manage secrets"
+                    }
+                  ],
+                  "opens": "t14"
+                }
+              ],
+              "shows": 5
+            },
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+]
